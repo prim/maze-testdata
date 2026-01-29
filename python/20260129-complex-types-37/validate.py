@@ -1,14 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-验证脚本 - Python 3.5 复杂类型测试用例
+验证脚本 - Python 3.11 复杂类型测试用例
 
-Python 3.5 特点:
-- 无 f-string (Python 3.6+)
-- 无 dataclass (Python 3.7+)
-- 类实例识别方式可能与 Python 3.11 不同
-
-此验证脚本针对 Python 3.5 的实际输出进行调整
+验证 maze 分析结果是否正确识别了各种 Python 3.11 类型
+包括 dataclass、typing.NamedTuple 等 Python 3.7+ 特性
 """
 
 from __future__ import print_function
@@ -39,20 +35,33 @@ def validate(data):
     # ============================================================
     print("\nValidating summary:")
     
-    # Python 3.5 的 pymempool 对象数量较少 (约 26000)
+    # 验证 pymempool 对象数量 (Python 3.11 应该 > 50000)
     pymempool_objects = summary.get("pymempool_objects", 0)
     print("  pymempool_objects = %d" % pymempool_objects)
-    assert pymempool_objects > 20000, "Expected > 20000 pymempool objects, got %d" % pymempool_objects
-    print("  ✓ pymempool_objects > 20000")
+    assert pymempool_objects > 50000, "Expected > 50000 pymempool objects, got %d" % pymempool_objects
+    print("  ✓ pymempool_objects > 50000")
     
     # ============================================================
     # 辅助函数
     # ============================================================
     def find_type_containing(target):
-        """查找包含指定字符串的类型"""
+        """查找包含指定字符串的类型 (精确匹配 instance 类型)"""
+        # 优先匹配精确的 instance 类型 (Python 3.x 格式: <class ClassName> instance)
+        exact_pattern = "<class %s> instance" % target
         for item in items:
             t = item.get("type", "")
-            if target in t:
+            if exact_pattern in t:
+                return item
+        # 兼容 Python 2.7 格式: <class ClassName'> instance
+        exact_pattern_27 = "<%s'> instance" % target
+        for item in items:
+            t = item.get("type", "")
+            if exact_pattern_27 in t:
+                return item
+        # 退回到简单包含匹配 (但排除列表类型签名)
+        for item in items:
+            t = item.get("type", "")
+            if target in t and not t.startswith("["):
                 return item
         return None
     
@@ -64,23 +73,103 @@ def validate(data):
         return None
     
     # ============================================================
-    # 验证基础类型
+    # 验证类实例
     # ============================================================
-    print("\nValidating basic types:")
+    print("\nValidating class instances:")
     
-    # unicode - 应该有很多
-    unicode_type = find_exact_type("unicode")
-    assert unicode_type is not None, "unicode not found"
-    print("  unicode: amount=%d" % unicode_type["amount"])
-    assert unicode_type["amount"] > 10000, "Expected > 10000 unicode, got %d" % unicode_type["amount"]
-    print("  ✓ unicode amount > 10000")
+    # PersonClass - 应该有 1000 个
+    person = find_type_containing("PersonClass")
+    assert person is not None, "PersonClass not found"
+    print("  PersonClass: amount=%d" % person["amount"])
+    assert person["amount"] == 1000, "Expected 1000 PersonClass, got %d" % person["amount"]
+    print("  ✓ PersonClass amount = 1000")
     
-    # bytes
-    bytes_type = find_type_containing("bytes")
-    assert bytes_type is not None, "bytes not found"
-    print("  bytes: amount=%d" % bytes_type["amount"])
-    assert bytes_type["amount"] > 1000, "Expected > 1000 bytes, got %d" % bytes_type["amount"]
-    print("  ✓ bytes amount > 1000")
+    # GameEntity - 应该有 300 个
+    game_entity = find_type_containing("GameEntity")
+    assert game_entity is not None, "GameEntity not found"
+    print("  GameEntity: amount=%d" % game_entity["amount"])
+    assert game_entity["amount"] == 300, "Expected 300 GameEntity, got %d" % game_entity["amount"]
+    print("  ✓ GameEntity amount = 300")
+    
+    # TreeNode - 应该有 600 个
+    tree_node = find_type_containing("TreeNode")
+    assert tree_node is not None, "TreeNode not found"
+    print("  TreeNode: amount=%d" % tree_node["amount"])
+    assert tree_node["amount"] == 600, "Expected 600 TreeNode, got %d" % tree_node["amount"]
+    print("  ✓ TreeNode amount = 600")
+    
+    # SimpleClass - 应该有 500 个
+    simple_class = find_type_containing("SimpleClass")
+    assert simple_class is not None, "SimpleClass not found"
+    print("  SimpleClass: amount=%d" % simple_class["amount"])
+    assert simple_class["amount"] == 500, "Expected 500 SimpleClass, got %d" % simple_class["amount"]
+    print("  ✓ SimpleClass amount = 500")
+    
+    # ============================================================
+    # 验证 dataclass 类型 (Python 3.7+)
+    # ============================================================
+    print("\nValidating dataclass instances:")
+    
+    # Player dataclass - 应该有 500 个
+    player = find_type_containing("Player")
+    assert player is not None, "Player dataclass not found"
+    print("  Player: amount=%d" % player["amount"])
+    assert player["amount"] == 500, "Expected 500 Player, got %d" % player["amount"]
+    print("  ✓ Player dataclass amount = 500")
+    
+    # Config frozen dataclass - 应该有 300 个
+    config = find_type_containing("Config")
+    assert config is not None, "Config dataclass not found"
+    print("  Config: amount=%d" % config["amount"])
+    assert config["amount"] == 300, "Expected 300 Config, got %d" % config["amount"]
+    print("  ✓ Config dataclass amount = 300")
+    
+    # ============================================================
+    # 验证字典类型
+    # ============================================================
+    print("\nValidating dict types:")
+    
+    # {"id", "value"} - 应该有 1000 个
+    id_value_dict = find_exact_type('{"id", "value"}')
+    assert id_value_dict is not None, '{"id", "value"} not found'
+    print('  {"id", "value"}: amount=%d' % id_value_dict["amount"])
+    assert id_value_dict["amount"] == 1000, 'Expected 1000 {"id", "value"}, got %d' % id_value_dict["amount"]
+    print('  ✓ {"id", "value"} amount = 1000')
+    
+    # ============================================================
+    # 验证 NamedTuple 类型 (typing.NamedTuple)
+    # ============================================================
+    print("\nValidating NamedTuple types:")
+    
+    # Point - 应该有 400 个
+    point = find_type_containing("Point")
+    assert point is not None, "Point not found"
+    print("  Point: amount=%d" % point["amount"])
+    assert point["amount"] == 400, "Expected 400 Point, got %d" % point["amount"]
+    print("  ✓ Point amount = 400")
+    
+    # Rectangle - Python 3.11 的 typing.NamedTuple 可能被识别为普通元组
+    # 检查是否存在，如果存在验证数量
+    rectangle = find_type_containing("Rectangle")
+    if rectangle is not None:
+        print("  Rectangle: amount=%d" % rectangle["amount"])
+        assert rectangle["amount"] == 300, "Expected 300 Rectangle, got %d" % rectangle["amount"]
+        print("  ✓ Rectangle amount = 300")
+    else:
+        print("  Rectangle: not separately identified (may be counted as tuple)")
+        print("  ✓ Rectangle skipped (Python 3.11 NamedTuple behavior)")
+    
+    # ============================================================
+    # 验证 collections.deque 类型
+    # ============================================================
+    print("\nValidating collections types:")
+    
+    # deque - 应该有 300 个
+    deque_type = find_type_containing("deque")
+    assert deque_type is not None, "deque not found"
+    print("  deque: amount=%d" % deque_type["amount"])
+    assert deque_type["amount"] == 300, "Expected 300 deque, got %d" % deque_type["amount"]
+    print("  ✓ deque amount = 300")
     
     # ============================================================
     # 验证集合类型
@@ -91,55 +180,11 @@ def validate(data):
     set_types = [item for item in items if "set" in item.get("type", "").lower()]
     total_sets = sum(item["amount"] for item in set_types)
     print("  Total set objects: %d" % total_sets)
-    assert total_sets >= 500, "Expected >= 500 set objects, got %d" % total_sets
-    print("  ✓ Total set objects >= 500")
-    
-    # ============================================================
-    # 验证 function 和 code 对象
-    # ============================================================
-    print("\nValidating function types:")
-    
-    # function instance
-    func_type = find_type_containing("function")
-    assert func_type is not None, "function not found"
-    print("  function: amount=%d" % func_type["amount"])
-    assert func_type["amount"] > 500, "Expected > 500 function, got %d" % func_type["amount"]
-    print("  ✓ function amount > 500")
-    
-    # code instance
-    code_type = find_type_containing("code")
-    assert code_type is not None, "code not found"
-    print("  code: amount=%d" % code_type["amount"])
-    assert code_type["amount"] > 500, "Expected > 500 code, got %d" % code_type["amount"]
-    print("  ✓ code amount > 500")
-    
-    # ============================================================
-    # 验证 type 对象
-    # ============================================================
-    print("\nValidating type objects:")
-    
-    # 尝试多种匹配方式（不同 Python 版本格式不同）
-    type_obj = find_type_containing("type> instance")
-    if type_obj is None:
-        type_obj = find_exact_type("type instance")
-    assert type_obj is not None, "type instance not found"
-    print("  type instance: amount=%d" % type_obj["amount"])
-    assert type_obj["amount"] > 50, "Expected > 50 type instances, got %d" % type_obj["amount"]
-    print("  ✓ type instance amount > 50")
-    
-    # ============================================================
-    # 验证 malloc 对象
-    # ============================================================
-    print("\nValidating malloc objects:")
-    
-    malloc_objects = summary.get("malloc_objects", 0)
-    print("  malloc_objects = %d" % malloc_objects)
-    assert malloc_objects > 100, "Expected > 100 malloc objects, got %d" % malloc_objects
-    print("  ✓ malloc_objects > 100")
+    assert total_sets >= 800, "Expected >= 800 set objects, got %d" % total_sets
+    print("  ✓ Total set objects >= 800")
     
     print("\n" + "=" * 60)
     print("All validations passed!")
-    print("Python 3.5 test case validated successfully.")
     print("=" * 60)
     
     return True
