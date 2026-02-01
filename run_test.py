@@ -46,7 +46,8 @@ def run_maze_analysis(tarball_path):
         maze_script,
         "--tar", tarball_path,
         "--text",
-        "--json-output"
+        "--json-output",
+        "--limit", "500"
     ]
     
     print("=" * 60)
