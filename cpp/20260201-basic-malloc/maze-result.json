@@ -1,0 +1,96 @@
+{
+  "summary": {
+    "vms": 23748608,
+    "core_size": 19370392,
+    "ptmalloc": 15544320,
+    "pymempool": 0,
+    "unknown": 172032,
+    "malloc_objects": 0,
+    "pymempool_objects": 0
+  },
+  "items": [
+    {
+      "order": 1,
+      "amount": 80000,
+      "total_size": 5760000,
+      "avg_size": 72,
+      "type": "(weak) malloc(72)",
+      "type_id": 300000001000004
+    },
+    {
+      "order": 2,
+      "amount": 80000,
+      "total_size": 3200000,
+      "avg_size": 40,
+      "type": "(weak) malloc(40)",
+      "type_id": 300000001000003
+    },
+    {
+      "order": 3,
+      "amount": 80000,
+      "total_size": 1920000,
+      "avg_size": 24,
+      "type": "(weak) malloc(24)",
+      "type_id": 300000001000002
+    },
+    {
+      "order": 4,
+      "amount": 80000,
+      "total_size": 1920000,
+      "avg_size": 24,
+      "type": "(\u003c32) C++ A",
+      "type_id": 300000001000000
+    },
+    {
+      "order": 5,
+      "amount": 1,
+      "total_size": 643064,
+      "avg_size": 643064,
+      "type": "malloc(643064){0:malloc(24),8:malloc(24),16:malloc(24),24:malloc(24),32:malloc(24),40:malloc(24),48:malloc(24),56:malloc(24)}",
+      "type_id": 300000000000004
+    },
+    {
+      "order": 6,
+      "amount": 1,
+      "total_size": 643064,
+      "avg_size": 643064,
+      "type": "malloc(643064){0:malloc(40),8:malloc(40),16:malloc(40),24:malloc(40),32:malloc(40),40:malloc(40),48:malloc(40),56:malloc(40)}",
+      "type_id": 300000000000003
+    },
+    {
+      "order": 7,
+      "amount": 1,
+      "total_size": 643064,
+      "avg_size": 643064,
+      "type": "malloc(643064){0:malloc(72),8:malloc(72),16:malloc(72),24:malloc(72),32:malloc(72),40:malloc(72),48:malloc(72),56:malloc(72)}",
+      "type_id": 300000000000002
+    },
+    {
+      "order": 8,
+      "amount": 1,
+      "total_size": 72712,
+      "avg_size": 72712,
+      "type": "malloc(72712)",
+      "type_id": 300000000000001
+    },
+    {
+      "order": 9,
+      "amount": 1,
+      "total_size": 4104,
+      "avg_size": 4104,
+      "type": "(\u003c8192) C++ char",
+      "type_id": 300000001000001
+    },
+    {
+      "order": 10,
+      "amount": 1,
+      "total_size": 648,
+      "avg_size": 648,
+      "type": "malloc(648)",
+      "type_id": 300000000000000
+    }
+  ],
+  "total_topn": 14806656,
+  "known_size": 12804104,
+  "generated_at": "2026-02-01 17:06:12"
+}

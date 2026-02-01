@@ -1,0 +1,192 @@
+156984.md5
+156984.exe
+maps
+c3629593c6c1f9079dfe6bcd66d85b77
+5bb4432ea5df587609caa090043856ae
+c4cf836dac10f521bd438f3e01949f42
+6d21de6f5c42a56f416bf4c582aeeb5e
+8663cdd749525ddadf29cf0592a67819
+c3179490f03be31eaaaa50849aee5764
+core.156984
+libthread_db.so
+s3 downloaded 757472f0d559a48b74f45a23066c8c1d2329e50d.debug 0 bytes NoSuchKey: The specified key does not exist.
+	status code: 404, request id: 43377F8E42D0A3D9, host id: 
+s3 downloaded 0c47cec75226c7736517d5acb61e373d541a5023.debug 0 bytes NoSuchKey: The specified key does not exist.
+	status code: 404, request id: 3F18C0B7589C4FDC, host id: 
+s3 downloaded ./.s3_malloc_so.json 16948 bytes <nil>
+s3 downloaded ./.use_parse_dwarf_s3_part.json 652 bytes <nil>
+readelf: Error: Unable to find program interpreter name
+s3 downloaded ctypes-757472f0d559a48b74f45a23066c8c1d2329e50d 0 bytes NoSuchKey: The specified key does not exist.
+	status code: 404, request id: 417D63C96088B230, host id: 
+s3 downloaded ctypes-c-... 0 bytes NoSuchKey: The specified key does not exist.
+	status code: 404, request id: 479F65545028EE61, host id: 
+s3 downloaded ctypes-c047672cae7964324658491e7dee26748ae5d2f8 1197 bytes <nil>
+s3 uploadloaded ctypes-c047672cae7964324658491e7dee26748ae5d2f8 &{http://postman-maze-so.s3v2.nie.netease.com/ctypes-c047672cae7964324658491e7dee26748ae5d2f8 <nil> } <nil>
+s3 uploadloaded ./.s3_malloc_so.json &{http://postman-maze-so.s3v2.nie.netease.com/s3_malloc_so <nil> } <nil>
+s3 uploadloaded ./.use_parse_dwarf.json &{http://postman-maze-so.s3v2.nie.netease.com/use_parse_dwarf <nil> } <nil>
+log file ./postman-db/coredump-default-156984/maze.log
+python log file ./postman-db/coredump-default-156984/maze.py.log
+* Corefile.gcore
+* Process.init
+* Process.cache_proc_maps
+* Process.init_exe
+* Process.setup_language
+* Process.do_maps_misc
+* GDB.debug_print
+* Symbols.download_symbol_files
+./bin/s3 download symbols/757472f0d559a48b74f45a23066c8c1d2329e50d.debug 757472f0d559a48b74f45a23066c8c1d2329e50d.debug
+./bin/s3 download symbols/0c47cec75226c7736517d5acb61e373d541a5023.debug 0c47cec75226c7736517d5acb61e373d541a5023.debug
+download_use_parse_dwarf: {'e0957c6b26be33224797a4c5a12c9c4c93e64a07': 1, '86d3b4ccff39e7c5d3b5396e37d643f90a4a954b': 1, '024391b0d8d7ce406237f58fa3b47ef221ed3a7f': 1, '02d45ba21ba227f40ff566026b3eb57f482b8ea0': 1, '033d4b78779dd4dd7512b5f14c9c4bd8f9eb4eaa': 1, '3eb34bdefa2bcf661e752667f7e60a29b265ab0b': 1, '46cbb7c497a8117302c1c25f4adf480ee8217a48': 1, '6befe783bff756be0a0fc2245f12d8ea8aa24e83': 1, '88abc00ad8cc80928b0a7f29fe4c30b9956c5057': 1, 'b7a7019ab3454b057cd6ae80f37c1513b457d329': 1, 'bcc8a3720e71b8a4f3f19ef8eadeff15d23b592f': 1, 'cb9af79f3a294f7bf97b310b61a2c0b06c55661e': 1, 'ecf6f68c5cdd4bd97cb2d97f7cd8b53bbfaa0cad': 1}
+* GDB.do
+./gdb-10-2-lmy-tls/bin/gdb -q -x .gdbcommand.py -ex maze
+	0x000055eb220f2000 - 0x000055eb22fc5000 is load4
+Process.vms 22.6484375
+* Cpp.do
+* Cpp.merge
+./gdb-10-2-lmy-tls/bin/gdb -q -x .gdbcommand.py -ex maze
+update_symbol_zero_address len(0)
+* Process.do_maps
+* C.address
+* GDB.ctypes
+./gdb-10-2-lmy-tls/bin/gdb -q -x .gdbcommand.py -ex maze
+mb2_detect_py_type A
+* Python.obmalloc
+* Python.unicode
+* CppVtable.output gdb 180 nm 0
+storage output to ./postman-db/coredump-default-156984/storage.json ./postman-db/coredump-default-156984/maze.log
+args 156984  coredump default 156984 postmanprofile
+maze !_.zz
+rm maze.log  <nil>
+ln log file  <nil>
+mmap 19370392 18.5M
+* main.maze1
+* maze/cpp.InitCpp
+* maze/cpp.InitPthread
+* maze/cpp.MarkBssMmap
+* maze/cpp.InitOffset_HashTable_M_storage
+* maze/cpp.InitNeteaseProjectgs
+* maze/cpp.InitTypesHasPointer
+CPU 8.74926449672561 Mem 2.8G Rss 45.4M goroutines 16
+* maze/mallocer.InitAllMemoryPieceSize
+* maze/cpp.InitFakeSymbols
+* maze/mallocer/pymalloc.WalkPymalloc
+* maze/mallocer/ptmalloc.WalkPtmalloc
+* maze/mallocer/tcmalloc.WalkTcmalloc
+* maze/mallocer/jemalloc.WalkJemalloc
+* maze/mallocer/mimalloc.WalkMimalloc
+* maze/common.(*MemoryPieceManager).Sort-fm
+* maze/c.Main
+{"time":"2026-02-01 17:06:11","level":"INFO","src_file":"logger.go:47","func_name":"maze/common.DLog.Println","module_name":"maze","msg":"* InitAllMemoryPieceSize\n"}
+{"time":"2026-02-01 17:06:11","level":"INFO","src_file":"logger.go:47","func_name":"maze/common.DLog.Println","module_name":"maze","msg":"* MergeUnknowMemory\n"}
+* maze/mallocer.MergeUnknowMemoryPiece
+* maze/mallocer.ClassifyByHookFunctions
+* maze/mallocer.ClassifyVtablePiece
+* maze/cpp.CollectGlobal
+* maze/cpp.Classify
+* maze/cpp.WaitCppInited
+Doing SubTypeClassify cpu_num: 47
+CPU 139.84175618743237 Mem 5.3G Rss 1004.5M goroutines 17
+SubTypeClassify NodeAmount 644948
+* maze/mallocer.ClassifySymbolPiece
+* maze/cpp.SubTypeClassify
+Doing SubTypeClassify cpu_num: 47
+SubTypeClassify NodeAmount 905192
+* maze/mallocer.ClassifyMemoryPiece
+[Cpp]====UnknowMallocPiece sz  1.910M 2002552
+[Cpp]====CppMallocPiece sz  10.380M 10884104
+[Cpp]====CppGlobalKnowSize sz  4.008k 4104
+[Cpp]====CppWeakKnowSize sz  10.376M 10880000
+* runtime.GC
+* maze/mallocer.MergeUnknowMemoryPiece took 1.264221227s since 2026-02-01 17:06:11.177995421 +0800 HKT m=+0.546929284
+* maze/c.Main took 1.264339081s since 2026-02-01 17:06:11.177895208 +0800 HKT m=+0.546829077
+AllUnknowMmapSize begin 7fa826639000 end 7fa82663e000 unknow  size 20.0k
+AllUnknowMmapSize begin 7fa826746000 end 7fa826748000 unknow  size 8.0k
+AllUnknowMmapSize begin 7fffb0d96000 end 7fffb0db7000 unknow  size 132.0k
+AllUnknowMmapSize begin 7fffb0dd0000 end 7fffb0dd2000 unknow  size 8.0k
+AllUnknowMmapSize total size 168.0k
+AllUnknowMmapSize 168.000k
+* PrintMemorySumary
+- vms 22.6M
+  - vms.heap 14.8M
+  - vms.stack 0B
+  - vms.file_mmap 5.1M
+  - vms.system 0B
+  - vms.mmap 2.7M
+    - vms.mmap.p 0B
+    - vms.mmap.bss 64.0k
+    - vms.mmap.pthread 0B
+    - vms.mmap.mimalloc 0B
+    - vms.mmap.tcmalloc 0B
+    - vms.mmap.ptmalloc 17.3M
+    - vms.mmap.pymalloc 0B
+    - vms.mmap.jemalloc 0B
+    - vms.mmap.jemalloc-arena 0B
+    - vms.mmap.unknow -15372288B
+
+python memory pyo amount 0
+python memory pool total 0B
+python memory pool malloced 0B
+python memory pool freed 0B
+python memory pool empty 0B
+mallocer ptmalloc
+mallocer pyo amount 0
+mallocer total 14.8M
+mallocer malloced 16.6M
+mallocer freed 104.3k
+mallocer empty 732.3k
+total malloced 16.6M
+pthread stack 0B
+CountGoroutineError grep goroutine ./postman-db/coredump-default-156984/maze.log | wc -l 0
+ 
+CountGoroutineError 0
+ <nil>
+CountGoroutineError 0
+ 0
+* main.maze1 took 1.762714661s since 2026-02-01 17:06:10.683129774 +0800 HKT m=+0.052063643
+* maze/postman.makePostmanResult
+{"time":"2026-02-01 17:06:12","level":"INFO","src_file":"logger.go:56","func_name":"maze/common.DLog.Printf","module_name":"maze","msg":"* makePostmanResult"}
+SortByValue 10
+{"time":"2026-02-01 17:06:12","level":"INFO","src_file":"logger.go:47","func_name":"maze/common.DLog.Println","module_name":"maze","msg":"samplePostmanObjects size  16\n"}
+* maze/postman.writePostmanResult
+{"time":"2026-02-01 17:06:12","level":"INFO","src_file":"logger.go:56","func_name":"maze/common.DLog.Printf","module_name":"maze","msg":"* writePostmanResult"}
+{"time":"2026-02-01 17:06:12","level":"INFO","src_file":"logger.go:47","func_name":"maze/common.DLog.Println","module_name":"maze","msg":"/home/hcjn0770/.pyenv/shims/python .postman_lz4.py --project coredump --user default --profileId 156984\n"}
+
+================================================================================
+Memory Analysis Results (Top Objects by Size)
+================================================================================
+
+Process VMS: 22.6M | Corefile: 18.5M | Ptmalloc: 14.8M | PyMemPool: 0B | Unknown: 168.0k
+Malloc objects: 0 | PyMemPool objects: 0
+--------------------------------------------------------------------------------
+Order     Amount    TotalSize    AvgSize  Type
+--------------------------------------------------------------------------------
+SortByValue 10
+    1      80000         5.5M         72  (weak) malloc(72)
+    2      80000         3.1M         40  (weak) malloc(40)
+    3      80000         1.8M         24  (weak) malloc(24)
+    4      80000         1.8M         24  (<32) C++ A
+    5          1       628.0k     643064  malloc(643064){0:malloc(24),8:malloc(24),16:malloc(24),24...
+    6          1       628.0k     643064  malloc(643064){0:malloc(40),8:malloc(40),16:malloc(40),24...
+    7          1       628.0k     643064  malloc(643064){0:malloc(72),8:malloc(72),16:malloc(72),24...
+    8          1        71.0k      72712  malloc(72712)
+    9          1         4.0k       4104  (<8192) C++ char
+   10          1         648B        648  malloc(648)
+================================================================================
+Total TopN size: 14.1M | Known size: 12.2M
+
+Backup: maze-result.json -> maze-result.json.bak.20260201170612
+JSON output: maze-result.json
+mode: postmanprofile
+./.maze --mode postmanprofile --project coredump --user default --profileId 156984 --pid 156984 --rmlog --cpp --text --json-output --cpp
+============================================================
+Maze One-Click Analysis
+============================================================
+Input: testdata/cpp/20260201-basic-malloc/coredump-156984-1769936451.tar.gz
+Project: coredump
+PID: 156984
+------------------------------------------------------------
+Extracting: testdata/cpp/20260201-basic-malloc/coredump-156984-1769936451.tar.gz
+Running: python .postman_prelude.py --project coredump --user default --profileId 156984
+------------------------------------------------------------
+Executing: ./maze --mode postmanprofile --project coredump --user default --profileId 156984 --pid 156984 --rmlog --cpp --text --json-output
+============================================================
