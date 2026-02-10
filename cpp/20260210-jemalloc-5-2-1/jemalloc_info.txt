@@ -1,0 +1,3 @@
+jemalloc version: 5-2-1
+so path: /home/hcjn0770/github/codemaker-maze/3rd/jemalloc-5-2-1/lib/libjemalloc.so.2
+so size: 2.2M
