@@ -1,26 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""
-Maze 测试运行器
-
-用法:
-    python testdata/run_test.py python/20260128-basic
-
-功能:
-    1. 进入指定测试目录
-    2. 执行 maze --tar 分析 coredump
-    3. 加载 maze-result.json
-    4. 调用测试目录下的 validate.py 进行验证
-"""
-
 from __future__ import print_function
-
-import os
+import io
 import sys
+import os
 import json
 import glob
 import importlib
 import subprocess
+
+if sys.version_info[0] >= 3:
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 
 def find_tarball(test_dir):
