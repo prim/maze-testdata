@@ -54,7 +54,12 @@ def run_maze_analysis(tarball_path, py_merge=False):
     print("=" * 60)
     print("Command: %s" % " ".join(cmd))
     print("-" * 60)
-    
+
+    # 清理旧的结果文件，避免残留文件导致误判
+    result_path = os.path.join(maze_root, "maze-result.json")
+    if os.path.exists(result_path):
+        os.remove(result_path)
+
     # 在 maze 根目录执行
     ret = subprocess.call(cmd, cwd=maze_root)
     
