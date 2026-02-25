@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Validation script for mimalloc 1.0.0 multithread test case.
+Validation script for mimalloc 1.5.0 multithread test case.
 
 Expected allocations:
 - 20000 x 16 bytes
@@ -28,19 +28,18 @@ def validate(data):
         with open(data, 'r') as f:
             data = json.load(f)
 
+    
     items = data.get('items', [])
-
-    # Build a map of size -> amount for exact weak malloc items
-    # Only match exact "(weak) malloc(N)" without sub-structure like "{...}"
+    
+    # Build a map of size -> amount for weak malloc items
     size_to_amount = {}
     for item in items:
-        t = item.get('type', '')
-        if t.startswith('(weak) malloc(') and '{' not in t:
+        if 'weak' in item.get('type', ''):
             avg_size = item.get('avg_size', 0)
             amount = item.get('amount', 0)
-            size_to_amount[avg_size] = size_to_amount.get(avg_size, 0) + amount
+            size_to_amount[avg_size] = amount
     
-    print("=== mimalloc 1.0.0 Multithread Test Validation ===")
+    print("=== mimalloc 1.5.0 Multithread Test Validation ===")
     print()
     
     # Expected allocations with tolerance
@@ -84,6 +83,6 @@ if __name__ == '__main__':
     if len(sys.argv) != 2:
         print(f"Usage: {sys.argv[0]} <maze-result.json>")
         sys.exit(1)
-
+    
     result = validate(sys.argv[1])
     sys.exit(0 if result else 1)

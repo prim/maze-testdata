@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Validation script for mimalloc 1.0.0 multithread test case.
+Validation script for mimalloc 1.8.0 multithread test case.
 
 Expected allocations:
 - 20000 x 16 bytes
@@ -28,8 +28,9 @@ def validate(data):
         with open(data, 'r') as f:
             data = json.load(f)
 
+    
     items = data.get('items', [])
-
+    
     # Build a map of size -> amount for exact weak malloc items
     # Only match exact "(weak) malloc(N)" without sub-structure like "{...}"
     size_to_amount = {}
@@ -40,10 +41,13 @@ def validate(data):
             amount = item.get('amount', 0)
             size_to_amount[avg_size] = size_to_amount.get(avg_size, 0) + amount
     
-    print("=== mimalloc 1.0.0 Multithread Test Validation ===")
+    print("=== mimalloc 1.8.0 Multithread Test Validation ===")
     print()
     
     # Expected allocations with tolerance
+    # Note: mimalloc 1.8.0 changed huge page xblock_size semantics.
+    # For huge pages, xblock_size = page available space (segment_size - segment_info_size),
+    # not the user-requested malloc size. For 3MB blocks, xblock_size = 3407616.
     expected = {
         16: (20000, 0.95),      # 95% tolerance
         32: (20000, 0.95),
@@ -54,7 +58,7 @@ def validate(data):
         1024: (10000, 0.95),
         1048576: (100, 0.95),   # 1MB
         2097152: (100, 0.95),   # 2MB
-        3145728: (100, 0.95),   # 3MB
+        3407616: (100, 0.95),   # 3MB (xblock_size = page available space in 1.8.0)
     }
     
     all_passed = True
@@ -84,6 +88,6 @@ if __name__ == '__main__':
     if len(sys.argv) != 2:
         print(f"Usage: {sys.argv[0]} <maze-result.json>")
         sys.exit(1)
-
+    
     result = validate(sys.argv[1])
     sys.exit(0 if result else 1)

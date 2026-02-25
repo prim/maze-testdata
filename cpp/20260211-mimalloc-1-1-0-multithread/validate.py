@@ -18,9 +18,15 @@ Expected allocations:
 import json
 import sys
 
-def validate(json_path):
-    with open(json_path, 'r') as f:
-        data = json.load(f)
+def validate(data):
+    """Validate maze analysis results.
+
+    Args:
+        data: dict (from run_test.py) or str (file path, from CLI)
+    """
+    if isinstance(data, str):
+        with open(data, 'r') as f:
+            data = json.load(f)
     
     items = data.get('items', [])
     
@@ -72,14 +78,15 @@ def validate(json_path):
     
     if all_passed:
         print("All validations passed!")
-        return 0
+        return True
     else:
         print("Some validations failed!")
-        return 1
+        return False
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
         print(f"Usage: {sys.argv[0]} <maze-result.json>")
         sys.exit(1)
-    
-    sys.exit(validate(sys.argv[1]))
+
+    result = validate(sys.argv[1])
+    sys.exit(0 if result else 1)

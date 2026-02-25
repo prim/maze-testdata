@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Validation script for mimalloc 1.0.0 multithread test case.
+Validation script for mimalloc 1.6.0 multithread test case.
 
 Expected allocations:
 - 20000 x 16 bytes
@@ -39,13 +39,13 @@ def validate(data):
             avg_size = item.get('avg_size', 0)
             amount = item.get('amount', 0)
             size_to_amount[avg_size] = size_to_amount.get(avg_size, 0) + amount
-    
-    print("=== mimalloc 1.0.0 Multithread Test Validation ===")
+
+    print("=== mimalloc 1.6.0 Multithread Test Validation ===")
     print()
-    
+
     # Expected allocations with tolerance
     expected = {
-        16: (20000, 0.95),      # 95% tolerance
+        16: (20000, 0.95),
         32: (20000, 0.95),
         64: (20000, 0.95),
         128: (10000, 0.95),
@@ -56,23 +56,23 @@ def validate(data):
         2097152: (100, 0.95),   # 2MB
         3145728: (100, 0.95),   # 3MB
     }
-    
+
     all_passed = True
-    
+
     for size, (expected_amount, tolerance) in expected.items():
         actual = size_to_amount.get(size, 0)
         min_expected = int(expected_amount * tolerance)
-        
+
         if actual >= min_expected:
             status = "PASS"
         else:
             status = "FAIL"
             all_passed = False
-        
+
         print(f"  {size:>10} bytes: {actual:>6} / {expected_amount:>6} (min: {min_expected}) {status}")
-    
+
     print()
-    
+
     if all_passed:
         print("All validations passed!")
         return True
