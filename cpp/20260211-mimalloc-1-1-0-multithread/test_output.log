@@ -1,0 +1,153 @@
+============================================================
+mimalloc Multithread Malloc Test - PID: 4111823
+============================================================
+[mimalloc] mi_stats_print API found
+[mimalloc] mi_malloc API found
+[mimalloc] mi_good_size API found
+[mimalloc] Size class examples:
+  mi_good_size(16) = 16
+  mi_good_size(32) = 32
+  mi_good_size(64) = 64
+  mi_good_size(128) = 128
+  mi_good_size(256) = 256
+  mi_good_size(512) = 512
+  mi_good_size(1024) = 1024
+  mi_good_size(2048) = 2048
+  mi_good_size(4096) = 4096
+
+Target allocations:
+  - 20000 malloc(16) blocks
+  - 20000 malloc(32) blocks
+  - 20000 malloc(64) blocks
+  - 10000 malloc(128) blocks
+  - 10000 malloc(256) blocks
+  - 10000 malloc(512) blocks
+  - 10000 malloc(1024) blocks
+  - 100 malloc(1MB) blocks
+  - 100 malloc(2MB) blocks
+  - 100 malloc(3MB) blocks
+
+Threads: 8 (1 main + 7 workers)
+
+Distributing tasks to threads...
+
+Task distribution:
+  Thread 0: 10 task types, 6965 total blocks
+  Thread 1: 9 task types, 5753 total blocks
+  Thread 2: 10 task types, 17163 total blocks
+  Thread 3: 10 task types, 14049 total blocks
+  Thread 4: 10 task types, 17275 total blocks
+  Thread 5: 10 task types, 15135 total blocks
+  Thread 6: 10 task types, 14946 total blocks
+  Thread 7: 10 task types, 9014 total blocks
+
+Starting threads...
+  Thread 1: starting with 9 task types
+  Thread 2: starting with 10 task types
+  Thread 3: starting with 10 task types
+  Thread 4: starting with 10 task types
+  Thread 5: starting with 10 task types
+  Thread 6: starting with 10 task types
+  Thread 0: starting with 10 task types
+  Thread 7: starting with 10 task types
+  Thread 1: completed, waiting for gcore...
+  Thread 0: completed, waiting for gcore...
+  Thread 7: completed, waiting for gcore...
+  Thread 5: completed, waiting for gcore...
+  Thread 6: completed, waiting for gcore...
+  Thread 3: completed, waiting for gcore...
+  Thread 2: completed, waiting for gcore...
+  Thread 4: completed, waiting for gcore...
+
+All threads completed allocations!
+
+Final allocation counts:
+  malloc(16) blocks: 20000 (expected: 20000)
+  malloc(32) blocks: 20000 (expected: 20000)
+  malloc(64) blocks: 20000 (expected: 20000)
+  malloc(128) blocks: 10000 (expected: 10000)
+  malloc(256) blocks: 10000 (expected: 10000)
+  malloc(512) blocks: 10000 (expected: 10000)
+  malloc(1024) blocks: 10000 (expected: 10000)
+  malloc(1MB) blocks: 100 (expected: 100)
+  malloc(2MB) blocks: 100 (expected: 100)
+  malloc(3MB) blocks: 100 (expected: 100)
+
+[OK] All counts match expected values!
+
+============================================================
+mimalloc Statistics:
+============================================================
+heap stats:     peak      total      freed       unit      count  
+normal   1:      48 b      248 b      248 b        8 b       31     ok
+normal   2:     8.3 kb    62.6 kb    54.7 kb      16 b      4.0 k   not all freed!
+normal   4:    21.6 kb   128.1 kb   108.3 kb      32 b      4.1 k   not all freed!
+normal   6:     384 b      384 b       48 b       48 b        8     not all freed!
+normal   8:    81.6 kb   276.7 kb   195.1 kb      64 b      4.4 k   not all freed!
+normal  10:      96 b       96 b       96 b       96 b        1     ok
+normal  12:    13.4 kb   479.2 kb   469.1 kb     128 b      3.8 k   not all freed!
+normal  13:     1.2 kb     1.2 kb     160 b      160 b        8     not all freed!
+normal  14:     384 b      384 b      192 b      192 b        2     not all freed!
+normal  16:   985.8 kb     1.4 mb   462.5 kb     256 b      5.8 k   not all freed!
+normal  17:     2.2 kb     2.2 kb       0 b      320 b        7     not all freed!
+normal  18:     384 b      384 b      384 b      384 b        1     ok
+normal  20:   213.5 kb     2.0 mb     1.8 mb     512 b      4.0 k   not all freed!
+normal  22:     768 b      768 b      768 b      768 b        1     ok
+normal  23:     2.6 kb     2.6 kb       0 b      896 b        3     not all freed!
+normal  24:    85.0 kb     3.7 mb     3.6 mb     1.0 kb     3.7 k   not all freed!
+normal  28:    10.0 kb    10.0 kb    10.0 kb     2.0 kb       5     ok
+normal  32:    20.0 kb    20.0 kb    20.0 kb     4.0 kb       5     ok
+normal  36:    24.0 kb    32.0 kb    32.0 kb     8.0 kb       4     ok
+normal  40:    32.0 kb    32.0 kb    32.0 kb    16.0 kb       2     ok
+normal  44:    32.0 kb    32.0 kb    32.0 kb    32.0 kb       1     ok
+normal  49:   400.0 kb   400.0 kb       0 b     80.0 kb       5     not all freed!
+normal  53:   480.0 kb   480.0 kb       0 b    160.0 kb       3     not all freed!
+normal  64:    44.0 mb     3.6 gb     3.6 gb     1.0 mb     3.7 k   not all freed!
+normal  68:    60.0 mb     7.3 gb     7.3 gb     2.0 mb     3.7 k   not all freed!
+
+heap stats:     peak      total      freed       unit      count  
+    normal:   106.4 mb    10.9 gb    10.9 gb       1 b              not all freed!
+      huge:    10.8 gb    10.8 gb       0 b      3.0 mb     3.7 k   not all freed!
+     giant:       0 b        0 b        0 b        1 b              ok
+     total:    10.9 gb    21.7 gb    10.9 gb       1 b              not all freed!
+malloc requested:         21.7 gb
+
+  reserved:   256.1 mb   256.1 mb       0 b        1 b              not all freed!
+ committed:   256.1 mb   256.1 mb       0 b        1 b              not all freed!
+     reset:       0 b        0 b        0 b        1 b              ok
+   touched:   140.8 mb    18.5 gb    18.4 gb       1 b              not all freed!
+  segments:      59 b      7.4 kb     7.3 kb       1 b      7.6 k   not all freed!
+-abandoned:       0 b        0 b        0 b        1 b        0     ok
+   -cached:       0 b        0 b        0 b        1 b        0     ok
+     pages:      92 b      7.4 kb     7.4 kb       1 b      7.6 k   not all freed!
+-abandoned:       0 b        0 b        0 b        1 b        0     ok
+ -extended:
+ -noretire:      73   
+     mmaps:
+   commits:
+   threads:
+  searches:     1.3 avg
+   elapsed:    21.463 s
+   process: user: 117.146 s, system: 0.896 s, faults: 0, reclaims: 3417, rss: 1.5 gb
+
+  Expected user allocation: 650585600 bytes (620.45 MB)
+
+  Expected counts:
+    malloc(16):               20000
+    malloc(32):               20000
+    malloc(64):               20000
+    malloc(128):              10000
+    malloc(256):              10000
+    malloc(512):              10000
+    malloc(1024):             10000
+    malloc(1MB):              100
+    malloc(2MB):              100
+    malloc(3MB):              100
+
+============================================================
+>>> READY FOR GCORE <<<
+gcore 4111823
+============================================================
+
+Waiting for coredump generation...
+Press Ctrl+C to exit after gcore is done.
