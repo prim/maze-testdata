@@ -33,6 +33,13 @@ ALL_VERSIONS = [
     "1-7-0",
     "1-8-0",
     "1-9-2",
+    "1-9-7",
+    "2-0-9",
+    "2-1-9",
+    "2-2-7",
+    "3-0-12",
+    "3-1-6",
+    "3-2-8",
 ]
 
 # Date prefix for test case directories
@@ -62,24 +69,29 @@ def create_testcase(version):
     # Paths
     target_dir = TESTDATA_CPP / f"{DATE_PREFIX}-mimalloc-{version}-multithread"
     mimalloc_dir = ROOT_DIR / "3rd" / f"mimalloc-{version}"
-    mimalloc_lib = mimalloc_dir / "build" / "libmimalloc.so"
-    mimalloc_include = mimalloc_dir / "include"
-    
+
     # Check mimalloc exists
     if not mimalloc_dir.exists():
         print(f"WARNING: mimalloc-{version} not found at {mimalloc_dir}, skipping...")
         return False
-    
-    # Try both debug and release library names
-    mimalloc_lib_debug = mimalloc_dir / "build" / "libmimalloc-debug.so"
-    if mimalloc_lib_debug.exists():
-        mimalloc_lib = mimalloc_lib_debug
-        lib_name = "mimalloc-debug"
-    elif mimalloc_lib.exists():
-        lib_name = "mimalloc"
-    else:
-        print(f"WARNING: libmimalloc*.so not found at {mimalloc_dir}/build, skipping...")
+
+    # Find release so (禁止使用 debug so，debug 版本启用 MI_PADDING 导致 xblock_size 不一致)
+    # 优先查找 build-release/，其次 build/
+    mimalloc_so = None
+    for build_dir in ["build-release", "build"]:
+        candidates = list((mimalloc_dir / build_dir).glob("libmimalloc.so*"))
+        # 排除 debug so
+        candidates = [c for c in candidates if "debug" not in c.name]
+        if candidates:
+            mimalloc_so = candidates[0]
+            break
+
+    if mimalloc_so is None:
+        print(f"WARNING: release libmimalloc.so not found in {mimalloc_dir}/build-release or build/, skipping...")
+        print(f"  (debug so is forbidden, see dev-log/2026-02-25-mimalloc-1-2-0-cookie-xor-fix.md 踩坑 #6)")
         return False
+
+    print(f"Using release so: {mimalloc_so}")
     
     # Create target directory
     print(f"Creating directory: {target_dir}")
@@ -94,17 +106,15 @@ def create_testcase(version):
     shutil.copy(TEMPLATE_DIR / "validate.py", target_dir)
     
     # Compile the test program
-    print(f"Compiling test program with mimalloc-{version}...")
+    # 不链接 mimalloc so，运行时通过 LD_PRELOAD 加载
+    print(f"Compiling test program (no mimalloc link, will use LD_PRELOAD)...")
     test_binary = target_dir / "mi_alloc_multithread_test"
-    
+
     compile_cmd = [
         "g++", "-g", "-O0", "-pthread",
-        f"-I{mimalloc_include}",
-        f"-L{mimalloc_dir}/build",
-        f"-Wl,-rpath,{mimalloc_dir}/build",
         "-o", str(test_binary),
         str(target_dir / "mi_alloc_multithread_test.cpp"),
-        f"-l{lib_name}", "-ldl"
+        "-ldl"
     ]
     
     result = run_cmd(compile_cmd)
@@ -114,12 +124,12 @@ def create_testcase(version):
     
     print(f"Compiled: {test_binary}")
     
-    # Run the test program
-    print("Running test program...")
+    # Run the test program with LD_PRELOAD
+    print(f"Running test program with LD_PRELOAD={mimalloc_so}...")
     os.chdir(target_dir)
-    
+
     env = os.environ.copy()
-    env["LD_LIBRARY_PATH"] = f"{mimalloc_dir}/build:" + env.get("LD_LIBRARY_PATH", "")
+    env["LD_PRELOAD"] = str(mimalloc_so)
     
     with open("test_output.log", "w") as log_file:
         proc = subprocess.Popen(
@@ -213,13 +223,13 @@ def create_testcase(version):
     
     # Cleanup temporary files
     print("Cleaning up...")
-    for tmp_file in [corefile, "test_output.log"]:
+    for tmp_file in [corefile, "test_output.log", "mi_alloc_multithread_test", "mi_alloc_multithread_test.cpp"]:
         tmp_path = target_dir / tmp_file
         if tmp_path.exists():
             tmp_path.unlink()
             print(f"  Removed: {tmp_file}")
     
-    print(f"\n✅ Test case created: {target_dir}")
+    print(f"\n[OK] Test case created: {target_dir}")
     print(f"   Tarball: {tarball.name}")
     return True
 
@@ -255,7 +265,7 @@ def main():
         print("\nAvailable versions:")
         for v in ALL_VERSIONS:
             mimalloc_dir = ROOT_DIR / "3rd" / f"mimalloc-{v}"
-            status = "✅" if mimalloc_dir.exists() else "❌ (not found)"
+            status = "OK" if mimalloc_dir.exists() else "-- (not found)"
             print(f"  - {v} {status}")
         sys.exit(0)
     
@@ -292,7 +302,7 @@ def main():
     
     success_count = 0
     for version, success in results.items():
-        status = "✅ SUCCESS" if success else "❌ FAILED"
+        status = "OK" if success else "FAIL"
         print(f"  mimalloc-{version}: {status}")
         if success:
             success_count += 1

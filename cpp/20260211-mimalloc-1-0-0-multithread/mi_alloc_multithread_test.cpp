@@ -154,13 +154,7 @@ struct AllocTask
 
 void fill_memory(void *ptr, size_t size, unsigned char pattern)
 {
-	if (size <= 1024)
-		memset(ptr, pattern, size);
-	else
-	{
-		((char *)ptr)[0] = pattern;
-		((char *)ptr)[size - 1] = pattern;
-	}
+	memset(ptr, pattern, size);
 }
 
 struct SizeState
@@ -380,6 +374,7 @@ std::vector<int> distribute_randomly(int total, int num_parts, std::mt19937 &rng
 
 int main()
 {
+	setbuf(stdout, NULL);
 	printf("============================================================\n");
 	printf("mimalloc Multithread Malloc Test - PID: %d\n", getpid());
 	printf("============================================================\n");
@@ -534,6 +529,29 @@ int main()
 		printf("\n[ERROR] Count mismatch detected!\n");
 
 	print_mimalloc_stats();
+
+	// 输出大块地址到文件，用于和 maze 结果对比
+	{
+		FILE *fp = fopen("large_block_addrs.txt", "w");
+		if (fp)
+		{
+			fprintf(fp, "# size count addr...\n");
+			fprintf(fp, "1MB %zu", g_malloc_1m.size());
+			for (void *p : g_malloc_1m)
+				fprintf(fp, " %lx", (unsigned long)p);
+			fprintf(fp, "\n");
+			fprintf(fp, "2MB %zu", g_malloc_2m.size());
+			for (void *p : g_malloc_2m)
+				fprintf(fp, " %lx", (unsigned long)p);
+			fprintf(fp, "\n");
+			fprintf(fp, "3MB %zu", g_malloc_3m.size());
+			for (void *p : g_malloc_3m)
+				fprintf(fp, " %lx", (unsigned long)p);
+			fprintf(fp, "\n");
+			fclose(fp);
+			printf("\nLarge block addresses written to large_block_addrs.txt\n");
+		}
+	}
 
 	printf("\n============================================================\n");
 	printf(">>> READY FOR GCORE <<<\n");
