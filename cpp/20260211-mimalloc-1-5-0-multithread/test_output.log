@@ -1,0 +1,123 @@
+============================================================
+mimalloc Multithread Malloc Test - PID: 3084984
+============================================================
+[mimalloc] mi_stats_print API found
+[mimalloc] mi_malloc API found
+[mimalloc] mi_good_size API found
+[mimalloc] Size class examples:
+  mi_good_size(16) = 16
+  mi_good_size(32) = 32
+  mi_good_size(64) = 64
+  mi_good_size(128) = 128
+  mi_good_size(256) = 256
+  mi_good_size(512) = 512
+  mi_good_size(1024) = 1024
+  mi_good_size(2048) = 2048
+  mi_good_size(4096) = 4096
+
+Target allocations:
+  - 20000 malloc(16) blocks
+  - 20000 malloc(32) blocks
+  - 20000 malloc(64) blocks
+  - 10000 malloc(128) blocks
+  - 10000 malloc(256) blocks
+  - 10000 malloc(512) blocks
+  - 10000 malloc(1024) blocks
+  - 100 malloc(1MB) blocks
+  - 100 malloc(2MB) blocks
+  - 100 malloc(3MB) blocks
+
+Threads: 8 (1 main + 7 workers)
+
+Distributing tasks to threads...
+
+Task distribution:
+  Thread 0: 10 task types, 6687 total blocks
+  Thread 1: 10 task types, 7969 total blocks
+  Thread 2: 10 task types, 23685 total blocks
+  Thread 3: 10 task types, 7869 total blocks
+  Thread 4: 10 task types, 13011 total blocks
+  Thread 5: 10 task types, 11862 total blocks
+  Thread 6: 10 task types, 10267 total blocks
+  Thread 7: 10 task types, 18950 total blocks
+
+Starting threads...
+  Thread 1: starting with 10 task types
+  Thread 3: starting with 10 task types
+  Thread 2: starting with 10 task types
+  Thread 4: starting with 10 task types
+  Thread 5: starting with 10 task types
+  Thread 6: starting with 10 task types
+  Thread 0: starting with 10 task types
+  Thread 7: starting with 10 task types
+  Thread 0: completed
+  Thread 3: completed
+  Thread 1: completed
+  Thread 6: completed
+  Thread 5: completed
+  Thread 4: completed
+  Thread 7: completed
+  Thread 2: completed
+
+All threads completed!
+
+Final allocation counts:
+  malloc(16) blocks: 20000 (expected: 20000)
+  malloc(32) blocks: 20000 (expected: 20000)
+  malloc(64) blocks: 20000 (expected: 20000)
+  malloc(128) blocks: 10000 (expected: 10000)
+  malloc(256) blocks: 10000 (expected: 10000)
+  malloc(512) blocks: 10000 (expected: 10000)
+  malloc(1024) blocks: 10000 (expected: 10000)
+  malloc(1MB) blocks: 100 (expected: 100)
+  malloc(2MB) blocks: 100 (expected: 100)
+  malloc(3MB) blocks: 100 (expected: 100)
+
+[OK] All counts match expected values!
+
+============================================================
+mimalloc Statistics:
+============================================================
+heap stats:     peak      total      freed       unit      count  
+  reserved:     2.0 gb     2.0 gb    28.1 kb       1 b              not all freed!
+ committed:     2.0 gb     2.0 gb    28.1 kb       1 b              not all freed!
+     reset:       0 b        0 b        0 b        1 b              ok
+   touched:       0 b        0 b    278.2 gb       1 b              ok
+  segments:     464      165.9 k    165.9 k                         not all freed!
+-abandoned:     129        350        221                           not all freed!
+   -cached:       0          0          0                           ok
+     pages:     750      112.6 k    112.1 k                         not all freed!
+-abandoned:     444        1.1 k      744                           not all freed!
+ -extended:       0   
+ -noretire:       0   
+     mmaps:       0   
+   commits:       0   
+   threads:       7          7          7                           ok
+  searches:     0.0 avg
+numa nodes:       2
+   elapsed:      11.460 s
+   process: user: 48.039 s, system: 0.939 s, faults: 0, reclaims: 677072, rss: 1.4 gb
+
+  Expected user allocation: 650585600 bytes (620.45 MB)
+
+  Expected counts:
+    malloc(16):               20000
+    malloc(32):               20000
+    malloc(64):               20000
+    malloc(128):              10000
+    malloc(256):              10000
+    malloc(512):              10000
+    malloc(1024):             10000
+    malloc(1MB):              100
+    malloc(2MB):              100
+    malloc(3MB):              100
+
+Large block addresses written to large_block_addrs.txt
+
+============================================================
+>>> READY FOR GCORE <<<
+gcore 3084984
+============================================================
+
+Waiting for coredump generation...
+Press Ctrl+C to exit after gcore is done.
