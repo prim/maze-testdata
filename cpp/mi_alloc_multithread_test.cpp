@@ -145,6 +145,7 @@ std::vector<void *> g_malloc_2m;
 std::vector<void *> g_malloc_3m;
 
 std::atomic<int> g_threads_done(0);
+std::atomic<bool> g_gcore_done(false);
 
 struct AllocTask
 {
@@ -349,8 +350,17 @@ void thread_worker(int thread_id, std::vector<AllocTask> tasks)
 		}
 	}
 
-	printf("  Thread %d: completed\n", thread_id);
+	printf("  Thread %d: completed allocation\n", thread_id);
 	g_threads_done++;
+
+	// Worker threads (not main) keep alive until gcore is done
+	// to prevent mimalloc from abandoning segments and clearing page metadata
+	if (thread_id != 0)
+	{
+		while (!g_gcore_done.load(std::memory_order_relaxed))
+			usleep(100000); // 100ms
+		printf("  Thread %d: exiting\n", thread_id);
+	}
 }
 
 std::vector<int> distribute_randomly(int total, int num_parts, std::mt19937 &rng)
@@ -380,6 +390,8 @@ std::vector<int> distribute_randomly(int total, int num_parts, std::mt19937 &rng
 
 int main()
 {
+	setbuf(stdout, NULL); // Disable stdout buffering for gcore compatibility
+
 	printf("============================================================\n");
 	printf("mimalloc Multithread Malloc Test - PID: %d\n", getpid());
 	printf("============================================================\n");
@@ -482,17 +494,22 @@ int main()
 	g_malloc_3m.reserve(L);
 
 	printf("\nStarting threads...\n");
-	std::vector<std::thread> threads;
 
+	// Detach worker threads so they stay alive (don't join/exit)
 	for (int t = 1; t < NUM_THREADS; t++)
-		threads.emplace_back(thread_worker, t, thread_tasks[t]);
+	{
+		std::thread th(thread_worker, t, thread_tasks[t]);
+		th.detach();
+	}
 
+	// Main thread does its own allocation work
 	thread_worker(0, thread_tasks[0]);
 
-	for (auto &t : threads)
-		t.join();
+	// Wait for all worker threads to finish allocation
+	while (g_threads_done.load() < NUM_THREADS)
+		usleep(100000); // 100ms
 
-	printf("\nAll threads completed!\n");
+	printf("\nAll threads completed allocation!\n");
 
 	printf("\nFinal allocation counts:\n");
 	printf("  malloc(16) blocks: %zu (expected: %d)\n", g_malloc_16.size(), N);

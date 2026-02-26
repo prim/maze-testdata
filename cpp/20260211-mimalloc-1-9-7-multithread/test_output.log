@@ -1,5 +1,5 @@
 ============================================================
-mimalloc Multithread Malloc Test - PID: 3101225
+mimalloc Multithread Malloc Test - PID: 3455615
 ============================================================
 [mimalloc] mi_stats_print API found
 [mimalloc] mi_malloc API found
@@ -32,34 +32,34 @@ Threads: 8 (1 main + 7 workers)
 Distributing tasks to threads...
 
 Task distribution:
-  Thread 0: 10 task types, 13216 total blocks
-  Thread 1: 10 task types, 16633 total blocks
-  Thread 2: 10 task types, 12321 total blocks
-  Thread 3: 10 task types, 11476 total blocks
-  Thread 4: 10 task types, 13594 total blocks
-  Thread 5: 10 task types, 6076 total blocks
-  Thread 6: 10 task types, 13174 total blocks
-  Thread 7: 10 task types, 13810 total blocks
+  Thread 0: 10 task types, 11878 total blocks
+  Thread 1: 10 task types, 15456 total blocks
+  Thread 2: 10 task types, 8984 total blocks
+  Thread 3: 9 task types, 14519 total blocks
+  Thread 4: 10 task types, 12880 total blocks
+  Thread 5: 9 task types, 10376 total blocks
+  Thread 6: 10 task types, 11800 total blocks
+  Thread 7: 10 task types, 14407 total blocks
 
 Starting threads...
   Thread 1: starting with 10 task types
   Thread 2: starting with 10 task types
-  Thread 3: starting with 10 task types
+  Thread 3: starting with 9 task types
   Thread 4: starting with 10 task types
-  Thread 5: starting with 10 task types
+  Thread 5: starting with 9 task types
   Thread 6: starting with 10 task types
   Thread 0: starting with 10 task types
   Thread 7: starting with 10 task types
-  Thread 5: completed
-  Thread 3: completed
-  Thread 6: completed
-  Thread 2: completed
-  Thread 4: completed
-  Thread 7: completed
-  Thread 0: completed
-  Thread 1: completed
+  Thread 2: completed allocation
+  Thread 5: completed allocation
+  Thread 6: completed allocation
+  Thread 0: completed allocation
+  Thread 4: completed allocation
+  Thread 3: completed allocation
+  Thread 7: completed allocation
+  Thread 1: completed allocation
 
-All threads completed!
+All threads completed allocation!
 
 Final allocation counts:
   malloc(16) blocks: 20000 (expected: 20000)
@@ -79,30 +79,30 @@ Final allocation counts:
 mimalloc Statistics:
 ============================================================
 heap stats:     peak       total     current       block      total#   
-  reserved:     2.0 GiB     2.0 GiB     2.0 GiB                          
- committed:     2.0 GiB     2.0 GiB     1.9 GiB                          
+  reserved:     3.0 GiB     3.0 GiB     3.0 GiB                          
+ committed:     3.0 GiB     3.0 GiB     3.0 GiB                          
      reset:     0      
-    purged:    95.7 Mi 
-   touched:     0           0        -301.2 GiB                          
-  segments:   277         110.9 Ki    124                                not all freed
--abandoned:   229         482         125                                not all freed
+    purged:  1026.0 Ki 
+   touched:     0           0        -225.1 GiB                          
+  segments:   273          81.5 Ki    258                                not all freed
+-abandoned:     0           0           0                                ok
    -cached:     0           0           0                                ok
-     pages:     0           0        -110.4 Ki                           not all freed
--abandoned:   551         980         225                                not all freed
+     pages:     0           0         -81.2 Ki                           not all freed
+-abandoned:     0           0           0                                ok
  -extended:     0      
    -retire:     0      
-    arenas:     2      
+    arenas:     3      
  -rollback:     0      
-     mmaps:    11      
+     mmaps:    12      
    commits:     0      
     resets:     0      
-    purges:    61      
+    purges:     2      
    guarded:     0      
-   threads:     7           7           0                                ok
+   threads:     7           7           7                                not all freed
   searches:     0.0 avg
 numa nodes:     2
-   elapsed:    11.171 s
-   process: user: 69.120 s, system: 1.843 s, faults: 0, peak rss: 916.3 MiB, peak commit: 2.0 GiB
+   elapsed:     0.151 s
+   process: user: 0.405 s, system: 0.016 s, faults: 0, peak rss: 31.1 MiB, peak commit: 3.0 GiB
 
   Expected user allocation: 650585600 bytes (620.45 MB)
 
@@ -122,7 +122,7 @@ Large block addresses written to large_block_addrs.txt
 
 ============================================================
 >>> READY FOR GCORE <<<
-gcore 3101225
+gcore 3455615
 ============================================================
 
 Waiting for coredump generation...
