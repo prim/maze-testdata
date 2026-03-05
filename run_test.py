@@ -45,6 +45,7 @@ def run_maze_analysis(tarball_path, py_merge=False, no_cpp=False):
         tarball_path,
         "--text",
         "--json-output",
+        "--rmlog",
         "--limit",
         "500",
     ]
