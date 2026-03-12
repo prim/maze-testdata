@@ -8,10 +8,50 @@ import json
 import glob
 import importlib
 import subprocess
+import shutil
+import tarfile
+import errno
+
 
 if sys.version_info[0] >= 3:
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
+
+
+def make_log_name(test_dir, py_merge=False):
+    """生成稳定的日志文件名"""
+    name = test_dir.replace(os.sep, "-").replace("/", "-")
+    if py_merge:
+        name += "-py-merge"
+    return name
+
+
+def ensure_dir(path):
+    """确保目录存在，兼容 Python 2/3"""
+    if os.path.isdir(path):
+        return
+
+    try:
+        os.makedirs(path)
+    except OSError as e:
+        if e.errno == errno.EEXIST and os.path.isdir(path):
+            return
+        raise RuntimeError("Failed to create directory %s: %s" % (path, str(e)))
+
+
+def print_output_excerpt(output, max_lines=40):
+    """打印输出末尾片段，便于快速定位问题"""
+    if not output:
+        return
+
+    lines = output.splitlines()
+    if len(lines) <= max_lines:
+        print(output)
+        return
+
+    print("Maze output tail (%d/%d lines):" % (max_lines, len(lines)))
+    print("...")
+    print("\n".join(lines[-max_lines:]))
 
 
 def find_tarball(test_dir):
@@ -25,13 +65,142 @@ def find_tarball(test_dir):
     return files[0]
 
 
-def run_maze_analysis(tarball_path, py_merge=False, no_cpp=False):
+def cleanup_postman_db(maze_root, tarball_path):
+    """清理 postman-db 目录中与当前测试相关的子目录
+
+    根据 tarball 文件名解析 pid，清理对应的 postman-db 子目录，
+    避免多个测试之间的状态干扰。
+    """
+    import tarfile
+    import re
+
+    postman_db_dir = os.path.join(maze_root, "postman-db")
+    if not os.path.exists(postman_db_dir):
+        return
+
+    # 从 tar 文件中解析 pid
+    pid = None
+    try:
+        with tarfile.open(tarball_path, "r:gz") as tf:
+            for member in tf:
+                name = member.name
+                if name.startswith("./core."):
+                    pid = name.split("./core.")[1]
+                    break
+                if name.startswith("core."):
+                    pid = name.split("core.")[1]
+                    break
+    except Exception:
+        pass
+
+    if not pid:
+        return
+
+    # 清理匹配的 postman-db 子目录
+    # 目录格式: coredump-default-{pid} 或类似格式
+    cleaned = False
+    for dirname in os.listdir(postman_db_dir):
+        if pid in dirname:
+            dir_path = os.path.join(postman_db_dir, dirname)
+            if os.path.isdir(dir_path):
+                try:
+                    import shutil
+
+                    shutil.rmtree(dir_path)
+                    cleaned = True
+                    print("Cleaned postman-db cache: %s" % dirname)
+                except Exception as e:
+                    print(
+                        "Warning: Failed to clean postman-db cache %s: %s"
+                        % (dirname, str(e))
+                    )
+
+
+def snapshot_log_files(maze_root):
+    """记录当前可见的 maze 日志文件及其 mtime。"""
+    snapshots = {}
+    patterns = [
+        os.path.join(maze_root, "postman-db", "*", "maze.log"),
+        os.path.join(maze_root, "postman-db", "*", "maze.py.log"),
+        os.path.join(maze_root, "maze.log"),
+        os.path.join(maze_root, "maze.py.log"),
+    ]
+
+    for pattern in patterns:
+        for path in glob.glob(pattern):
+            try:
+                snapshots[path] = os.path.getmtime(path)
+            except OSError:
+                pass
+
+    return snapshots
+
+
+def detect_updated_log_files(maze_root, before_snapshots):
+    """查找本次运行更新过的日志文件。"""
+    current_snapshots = snapshot_log_files(maze_root)
+    updated = []
+
+    for path, mtime in current_snapshots.items():
+        if path not in before_snapshots or before_snapshots[path] != mtime:
+            updated.append((mtime, path))
+
+    updated.sort(reverse=True)
+    return [path for _, path in updated]
+
+
+def find_latest_log_file(maze_root, filename):
+    """返回最新的指定日志文件路径。"""
+    candidates = []
+    patterns = [
+        os.path.join(maze_root, filename),
+        os.path.join(maze_root, "postman-db", "*", filename),
+    ]
+
+    for pattern in patterns:
+        for path in glob.glob(pattern):
+            try:
+                candidates.append((os.path.getmtime(path), path))
+            except OSError:
+                pass
+
+    if not candidates:
+        return None
+
+    candidates.sort(reverse=True)
+    return candidates[0][1]
+
+
+def extract_log_paths_from_output(output, maze_root):
+    """从 maze 控制台输出中提取日志路径。"""
+    maze_log_path = None
+    maze_py_log_path = None
+
+    for line in output.splitlines():
+        line = line.strip()
+        if line.startswith("log file "):
+            candidate = line[len("log file ") :].strip()
+            if candidate:
+                maze_log_path = os.path.abspath(os.path.join(maze_root, candidate))
+        elif line.startswith("python log file "):
+            candidate = line[len("python log file ") :].strip()
+            if candidate:
+                maze_py_log_path = os.path.abspath(os.path.join(maze_root, candidate))
+
+    return maze_log_path, maze_py_log_path
+
+
+def run_maze_analysis(
+    tarball_path, test_dir, py_merge=False, no_cpp=False, verbose_maze=False
+):
     """执行 maze 分析
 
     Args:
         tarball_path: tar.gz 文件路径
+        test_dir: 测试目录路径（用于日志命名）
         py_merge: 是否启用 --py-merge 模式
         no_cpp: 是否禁用 C++ 对象分析
+        verbose_maze: 是否直接打印完整 maze 输出
     """
     # 获取 maze 根目录（testdata 的父目录）
     testdata_dir = os.path.dirname(os.path.abspath(__file__))
@@ -56,21 +225,71 @@ def run_maze_analysis(tarball_path, py_merge=False, no_cpp=False):
     if no_cpp:
         cmd.append("--no-cpp")
 
-    print("=" * 60)
     print("Running Maze Analysis")
-    print("=" * 60)
     print("Command: %s" % " ".join(cmd))
-    print("-" * 60)
 
     # 清理旧的结果文件，避免残留文件导致误判
     result_path = os.path.join(maze_root, "maze-result.json")
     if os.path.exists(result_path):
         os.remove(result_path)
 
+    # 清理 postman-db 缓存，避免测试之间的状态干扰
+    cleanup_postman_db(maze_root, tarball_path)
+
+    before_log_snapshots = snapshot_log_files(maze_root)
+
+    tmp_dir = os.path.join(maze_root, "tmp")
+    ensure_dir(tmp_dir)
+
+    log_name = make_log_name(test_dir, py_merge=py_merge)
+    maze_output_path = os.path.join(tmp_dir, "%s.maze-output.log" % log_name)
+
     # 在 maze 根目录执行
-    ret = subprocess.call(cmd, cwd=maze_root)
+    process = subprocess.Popen(
+        cmd,
+        cwd=maze_root,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        universal_newlines=True,
+    )
+    output, _ = process.communicate()
+
+    try:
+        with io.open(maze_output_path, "w", encoding="utf-8", errors="replace") as f:
+            f.write(output)
+    except IOError as e:
+        raise RuntimeError(
+            "Failed to write maze output log %s: %s" % (maze_output_path, str(e))
+        )
+
+    ret = process.returncode
+
+    if verbose_maze and output:
+        print(output)
+    else:
+        print("Maze output saved to: %s" % maze_output_path)
+
+    maze_log_path, maze_py_log_path = extract_log_paths_from_output(output, maze_root)
+    updated_log_files = detect_updated_log_files(maze_root, before_log_snapshots)
+
+    for path in updated_log_files:
+        if path.endswith("maze.log") and maze_log_path is None:
+            maze_log_path = path
+        elif path.endswith("maze.py.log") and maze_py_log_path is None:
+            maze_py_log_path = path
+
+    if maze_log_path is None:
+        maze_log_path = find_latest_log_file(maze_root, "maze.log")
+    if maze_py_log_path is None:
+        maze_py_log_path = find_latest_log_file(maze_root, "maze.py.log")
+
+    if maze_log_path:
+        print("Maze log: %s" % maze_log_path)
+    if maze_py_log_path:
+        print("Maze py log: %s" % maze_py_log_path)
 
     if ret != 0:
+        print_output_excerpt(output)
         raise RuntimeError("Maze analysis failed with exit code %d" % ret)
 
     # 返回结果文件路径
@@ -100,13 +319,14 @@ def load_validate_module(test_dir):
     return module
 
 
-def run_test(test_dir, py_merge=False):
+def run_test(test_dir, py_merge=False, verbose_maze=False):
     """
     运行单个测试
 
     Args:
         test_dir: 测试目录路径 (相对于 testdata 目录)
         py_merge: 是否启用 --py-merge 模式
+        verbose_maze: 是否直接打印完整 maze 输出
 
     Returns:
         bool: 测试是否通过
@@ -121,9 +341,7 @@ def run_test(test_dir, py_merge=False):
 
     mode_str = " (--py-merge)" if py_merge else ""
     print("")
-    print("=" * 60)
     print("Test: %s%s" % (test_dir, mode_str))
-    print("=" * 60)
 
     # 1. 查找 tarball
     tarball = find_tarball(abs_test_dir)
@@ -133,7 +351,13 @@ def run_test(test_dir, py_merge=False):
     no_cpp = os.path.exists(os.path.join(abs_test_dir, "no-cpp"))
 
     # 2. 执行 maze 分析
-    result_path = run_maze_analysis(tarball, py_merge=py_merge, no_cpp=no_cpp)
+    result_path = run_maze_analysis(
+        tarball,
+        test_dir,
+        py_merge=py_merge,
+        no_cpp=no_cpp,
+        verbose_maze=verbose_maze,
+    )
 
     # 3. 加载结果
     if not os.path.exists(result_path):
@@ -150,9 +374,7 @@ def run_test(test_dir, py_merge=False):
         print("PyMerge result saved to: %s" % merge_result_path)
 
     print("")
-    print("=" * 60)
     print("Validating Results%s" % mode_str)
-    print("=" * 60)
 
     # 4. 加载验证模块
     validate_module = load_validate_module(abs_test_dir)
@@ -188,10 +410,13 @@ def run_test(test_dir, py_merge=False):
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python run_test.py [--py-merge] <test_dir> [test_dir2 ...]")
+        print(
+            "Usage: python run_test.py [--py-merge] [--verbose-maze] <test_dir> [test_dir2 ...]"
+        )
         print("")
         print("Options:")
         print("  --py-merge    Also run tests with --py-merge mode")
+        print("  --verbose-maze  Print full maze output instead of saving it to tmp/")
         print("")
         print("Examples:")
         print("  python testdata/run_test.py python/20260128-basic")
@@ -201,11 +426,14 @@ def main():
     # 解析参数
     args = sys.argv[1:]
     enable_py_merge = False
+    verbose_maze = False
     test_dirs = []
 
     for arg in args:
         if arg == "--py-merge":
             enable_py_merge = True
+        elif arg == "--verbose-maze":
+            verbose_maze = True
         else:
             test_dirs.append(arg)
 
@@ -218,7 +446,7 @@ def main():
     for test_dir in test_dirs:
         # 普通模式测试
         try:
-            passed = run_test(test_dir)
+            passed = run_test(test_dir, verbose_maze=verbose_maze)
             results.append((test_dir, passed))
         except Exception as e:
             print("")
@@ -229,7 +457,7 @@ def main():
         # --py-merge 模式测试
         if enable_py_merge:
             try:
-                passed = run_test(test_dir, py_merge=True)
+                passed = run_test(test_dir, py_merge=True, verbose_maze=verbose_maze)
                 results.append(("%s (--py-merge)" % test_dir, passed))
             except Exception as e:
                 print("")
@@ -239,9 +467,7 @@ def main():
 
     # 打印汇总
     print("")
-    print("=" * 60)
     print("Test Summary")
-    print("=" * 60)
 
     passed_count = 0
     failed_count = 0
@@ -254,9 +480,7 @@ def main():
         else:
             failed_count += 1
 
-    print("-" * 60)
     print("Total: %d passed, %d failed" % (passed_count, failed_count))
-    print("=" * 60)
 
     # 返回退出码
     sys.exit(0 if failed_count == 0 else 1)
