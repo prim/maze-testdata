@@ -1,49 +1,70 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-jemalloc Malloc 测试验证脚本
+jemalloc single-thread validation.
 
-验证目标：
-    1. 验证 Maze 检测到 jemalloc 分配器
-    2. 验证 class A 实例被正确识别
-    3. 验证各种大小的 malloc 块存在
-    4. 验证大块 (1MB/2MB/3MB) 被识别
+Expected allocations:
+    - 20000 x class A (avg_size ~= 8B)
+    - 20000 x malloc(16)
+    - 20000 x malloc(32)
+    - 20000 x malloc(64)
+    - 10000 x malloc(128)
+    - 10000 x malloc(256)
+    - 10000 x malloc(512)
+    - 10000 x malloc(1024)
+    - 100 x malloc(1MB)
+    - 100 x malloc(2MB)
+    - 100 x malloc(3MB)
 
-测试数据：
-    - 20000 个 class A 实例
-    - 20000 个 malloc(16/32/64) 块
-    - 10000 个 malloc(128/256/512/1024) 块
-    - 100 个 malloc(1MB/2MB/3MB) 块
+Validation:
+    - Each bucket must achieve >= 99% detection rate.
+    - Large buckets (1MB/2MB/3MB) must not exceed 110% of expected count.
 """
 from __future__ import print_function
 import json
 import sys
-import os
 
 
-def find_type_containing(items, substring):
-    """查找类型名包含指定子串的项"""
-    for item in items:
-        if substring in item.get("type", ""):
-            return item
-    return None
+EXPECTED = [
+    (8, 20000, 0.99, None),
+    (16, 20000, 0.99, None),
+    (32, 20000, 0.99, None),
+    (64, 20000, 0.99, None),
+    (128, 10000, 0.99, None),
+    (256, 10000, 0.99, None),
+    (512, 10000, 0.99, None),
+    (1024, 10000, 0.99, None),
+    (1048576, 100, 0.99, 1.10),
+    (2097152, 100, 0.99, 1.10),
+    (3145728, 100, 0.99, 1.10),
+]
 
 
-def find_by_avg_size_range(items, min_size, max_size):
-    """按 avg_size 范围查找"""
-    results = []
+def count_chunks_in_range(items, min_size, max_size):
+    total = 0
     for item in items:
         avg_size = item.get("avg_size", 0)
         if min_size <= avg_size <= max_size:
-            results.append(item)
-    return results
+            total += item.get("amount", 0)
+    return total
+
+
+def bucket_range(target_size):
+    if target_size <= 1024:
+        return target_size, target_size * 1.5
+    return target_size * 0.85, target_size * 1.15
+
+
+def format_size(target_size):
+    if target_size >= 1048576:
+        return "%dMB" % (target_size // 1048576)
+    return "%dB" % target_size
 
 
 def validate(data):
-    """验证 maze 分析结果"""
-    print("=" * 60)
-    print("jemalloc Malloc Test Validation")
-    print("=" * 60)
+    print("=" * 70)
+    print("jemalloc Single-thread Test Validation")
+    print("=" * 70)
 
     assert "items" in data, "Missing 'items'"
     assert "summary" in data, "Missing 'summary'"
@@ -53,113 +74,72 @@ def validate(data):
 
     print("\n[Summary]")
     print("  VMS: %s" % summary.get("vms", "N/A"))
+    print("  Total items: %d" % len(items))
 
     all_passed = True
+    results = []
 
-    # =========================================================
-    # Check 1: 总分配量合理性
-    # =========================================================
-    print("\n[Check 1] Total allocation sanity...")
+    print("\n[Per-Size Validation]")
+    print("-" * 70)
+    print("  %-10s %10s %10s %10s %8s %8s %s" % (
+        "Size", "Expected", "Found", "Ratio", "MinReq", "MaxReq", "Status"))
+    print("-" * 70)
 
-    total_chunks = 0
-    for item in items:
-        total_chunks += item.get("amount", 0)
+    for target_size, expected_count, min_ratio, max_ratio in EXPECTED:
+        min_size, max_size = bucket_range(target_size)
+        found_count = count_chunks_in_range(items, min_size, max_size)
+        ratio = found_count / float(expected_count) if expected_count > 0 else 0
+        passed = ratio >= min_ratio
+        if max_ratio is not None and ratio > max_ratio:
+            passed = False
 
-    print("  Total items in result: %d" % len(items))
-    print("  Total chunks counted: %d" % total_chunks)
+        size_str = format_size(target_size)
+        max_req = ("%.0f%%" % (max_ratio * 100)) if max_ratio is not None else "-"
+        status = "PASS" if passed else "FAIL"
+        status_mark = "+" if passed else "x"
 
-    # 预期: 20000*4 + 10000*4 + 100*3 = 120300
-    if total_chunks >= 50000:
-        print("  ✓ Total chunks reasonable (>= 50000)")
-    else:
-        print("  ⚠ Total chunks lower than expected: %d" % total_chunks)
-        all_passed = False
+        print("  %-10s %10d %10d %9.2f%% %7.0f%% %8s [%s] %s" % (
+            size_str, expected_count, found_count,
+            ratio * 100, min_ratio * 100, max_req, status_mark, status))
 
-    # =========================================================
-    # Check 2: 小块分布
-    # =========================================================
-    print("\n[Check 2] Small chunk distribution...")
+        results.append({
+            "size": target_size,
+            "expected": expected_count,
+            "found": found_count,
+            "ratio": ratio,
+            "passed": passed,
+            "max_ratio": max_ratio,
+        })
+        if not passed:
+            all_passed = False
 
-    small_chunks = find_by_avg_size_range(items, 8, 128)
-    print("  Items with avg_size 8-128 bytes: %d" % len(small_chunks))
-    for item in small_chunks[:6]:
-        print("    - %s: amount=%d, avg_size=%d" % (
-            item.get("type", "unknown"),
-            item.get("amount", 0),
-            item.get("avg_size", 0)
-        ))
+    print("-" * 70)
 
-    if len(small_chunks) > 0:
-        print("  ✓ Found small chunks as expected")
-    else:
-        print("  ⚠ No small chunks found")
-        all_passed = False
+    total_expected = sum(e[1] for e in EXPECTED)
+    total_found = sum(r["found"] for r in results)
+    overall_ratio = total_found / float(total_expected) if total_expected > 0 else 0
 
-    # =========================================================
-    # Check 3: 中等块分布 (128-1024)
-    # =========================================================
-    print("\n[Check 3] Medium chunk distribution (128-1024 bytes)...")
+    print("\n[Overall Statistics]")
+    print("  Total expected: %d" % total_expected)
+    print("  Total found: %d" % total_found)
+    print("  Overall ratio: %.2f%%" % (overall_ratio * 100))
+    print("  Passed checks: %d/%d" % (sum(1 for r in results if r["passed"]), len(results)))
 
-    medium_chunks = find_by_avg_size_range(items, 129, 2048)
-    print("  Items with avg_size 129-2048 bytes: %d" % len(medium_chunks))
-    for item in medium_chunks[:6]:
-        print("    - %s: amount=%d, avg_size=%d" % (
-            item.get("type", "unknown"),
-            item.get("amount", 0),
-            item.get("avg_size", 0)
-        ))
-
-    if len(medium_chunks) > 0:
-        print("  ✓ Found medium chunks as expected")
-    else:
-        print("  ⚠ No medium chunks found")
-
-    # =========================================================
-    # Check 4: 大块分布 (1MB+)
-    # =========================================================
-    print("\n[Check 4] Large block distribution (1MB+)...")
-
-    large_chunks = find_by_avg_size_range(items, 900000, 4000000)
-    print("  Items with avg_size ~1MB-3MB: %d" % len(large_chunks))
-    for item in large_chunks[:5]:
-        size_mb = item.get("avg_size", 0) / (1024.0 * 1024.0)
-        print("    - %s: amount=%d, avg_size=%.2fMB" % (
-            item.get("type", "unknown"),
-            item.get("amount", 0),
-            size_mb
-        ))
-
-    if len(large_chunks) > 0:
-        print("  ✓ Found large blocks as expected")
-    else:
-        print("  ⚠ No large blocks found (may be in mmap region)")
-
-    # =========================================================
-    # Check 5: VMS 大小合理性
-    # =========================================================
-    print("\n[Check 5] VMS size sanity check...")
-
-    vms = summary.get("vms", 0)
-    if vms > 0:
-        vms_gb = vms / (1024.0 * 1024.0 * 1024.0)
-        print("  VMS: %.2f GB" % vms_gb)
-
-        # 预期: 1MB*100 + 2MB*100 + 3MB*100 = 600MB + 其他 ≈ 6-10 GB
-        if vms_gb > 0.3:
-            print("  ✓ VMS size reasonable (> 0.3GB)")
-        else:
-            print("  ⚠ VMS size seems too small: %.2f GB" % vms_gb)
-    else:
-        print("  ⚠ VMS not available")
-
-    # 最终结果
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 70)
     if all_passed:
-        print("All validations passed!")
+        print("VALIDATION PASSED: All size categories meet configured thresholds")
     else:
-        print("Some validations need attention (may still be acceptable)")
-    print("=" * 60)
-
+        print("VALIDATION FAILED: Some size categories violate thresholds")
+        print("\nFailed categories:")
+        for r in results:
+            if not r["passed"]:
+                size_str = format_size(r["size"])
+                if r["ratio"] < 0.99:
+                    print("  - %s: %.2f%% (need >= 99%%)" % (size_str, r["ratio"] * 100))
+                else:
+                    print("  - %s: %.2f%% (need <= %.0f%%)" % (
+                        size_str, r["ratio"] * 100, r["max_ratio"] * 100))
+    print("=" * 70)
     return all_passed
 
 
@@ -171,5 +151,4 @@ if __name__ == "__main__":
     with open(sys.argv[1], "r") as f:
         data = json.load(f)
 
-    result = validate(data)
-    sys.exit(0 if result else 1)
+    sys.exit(0 if validate(data) else 1)
