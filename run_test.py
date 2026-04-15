@@ -191,7 +191,11 @@ def extract_log_paths_from_output(output, maze_root):
 
 
 def run_maze_analysis(
-    tarball_path, test_dir, py_merge=False, no_cpp=False, verbose_maze=False
+    tarball_path,
+    test_dir,
+    py_merge=False,
+    no_cpp=False,
+    verbose_maze=False,
 ):
     """执行 maze 分析
 
@@ -339,16 +343,30 @@ def run_test(test_dir, py_merge=False, verbose_maze=False):
     if not os.path.isdir(abs_test_dir):
         raise RuntimeError("Test directory not found: %s" % abs_test_dir)
 
-    mode_str = " (--py-merge)" if py_merge else ""
+    mode_parts = []
+    if py_merge:
+        mode_parts.append("--py-merge")
     print("")
-    print("Test: %s%s" % (test_dir, mode_str))
+    
 
     # 1. 查找 tarball
     tarball = find_tarball(abs_test_dir)
     print("Tarball: %s" % tarball)
 
-    # 检测 no-cpp 标记文件
-    no_cpp = os.path.exists(os.path.join(abs_test_dir, "no-cpp"))
+    # 检测 no-cpp 标记文件；jemalloc testdata 默认禁用 C++ 分类，
+    # 避免大块 malloc 被 C++ 弱/虚表分类扰动，影响 allocator 回归结果。
+    no_cpp = os.path.exists(os.path.join(abs_test_dir, "no-cpp")) or (
+        test_dir.startswith("cpp/") and "jemalloc" in test_dir
+    )
+
+    if no_cpp:
+        mode_parts.append("--no-cpp")
+
+    mode_str = ""
+    if mode_parts:
+        mode_str = " (%s)" % ", ".join(mode_parts)
+
+    print("Test: %s%s" % (test_dir, mode_str))
 
     # 2. 执行 maze 分析
     result_path = run_maze_analysis(
