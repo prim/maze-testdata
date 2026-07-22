@@ -79,19 +79,22 @@ def validate_type_exists(items, type_pattern, min_count=1, description=""):
         return False, 0
 
 
-def validate(json_file, py_merge=False):
+def validate(data_or_path, py_merge=False):
     """
     验证函数
     
     Args:
-        json_file: maze-result.json 文件路径
+        data_or_path: run_test.py 传入的结果字典，或 maze-result.json 文件路径
         py_merge: 是否启用了 --py-merge 模式
     
     Returns:
         bool: 验证是否通过
     """
-    with open(json_file, 'r') as f:
-        data = json.load(f)
+    if isinstance(data_or_path, dict):
+        data = data_or_path
+    else:
+        with open(data_or_path, 'r') as f:
+            data = json.load(f)
     
     # 获取摘要信息
     summary = data.get('summary', {})
