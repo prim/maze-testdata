@@ -206,6 +206,14 @@ def run_maze_analysis(
         no_cpp: 是否禁用 C++ 对象分析
         verbose_maze: 是否直接打印完整 maze 输出
     """
+    # 清除上一用例留下的诊断路径，避免 validator 误读旧日志。
+    for env_name in [
+        "MAZE_TEST_OUTPUT_LOG",
+        "MAZE_TEST_MAZE_LOG",
+        "MAZE_TEST_MAZE_PY_LOG",
+    ]:
+        os.environ.pop(env_name, None)
+
     # 获取 maze 根目录（testdata 的父目录）
     testdata_dir = os.path.dirname(os.path.abspath(__file__))
     maze_root = os.path.dirname(testdata_dir)
@@ -289,8 +297,11 @@ def run_maze_analysis(
 
     if maze_log_path:
         print("Maze log: %s" % maze_log_path)
+        os.environ["MAZE_TEST_MAZE_LOG"] = maze_log_path
     if maze_py_log_path:
         print("Maze py log: %s" % maze_py_log_path)
+        os.environ["MAZE_TEST_MAZE_PY_LOG"] = maze_py_log_path
+    os.environ["MAZE_TEST_OUTPUT_LOG"] = maze_output_path
 
     if ret != 0:
         print_output_excerpt(output)
