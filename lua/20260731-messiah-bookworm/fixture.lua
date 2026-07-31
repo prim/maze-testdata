@@ -108,16 +108,40 @@ local NpcProperties = map_class("FixtureNpcProperties", dict(
     decisions=CustomListType
 ))
 
+local OnlineNested = map_class("FixtureOnlineNested", dict(
+    score=0,
+    note="",
+    active=false
+))
+
+local OnlineNumbers = list_class("FixtureOnlineNumbers", "int")
+
+local OnlineProperties = map_class("FixtureOnlineProperties", dict(
+    guid=0,
+    health=0,
+    name="",
+    enabled=false,
+    nested=OnlineNested,
+    values=OnlineNumbers,
+    metadata=CustomMapType
+))
+
 build_schema_index("FixtureStats", Stats)
 build_schema_index("FixtureModifier", Modifier)
 build_schema_index("FixtureItem", Item)
 
 local PlayerEntity = ready(class("FixturePlayerEntity", asiocore.entity))
 local NpcEntity = ready(class("FixtureNpcEntity", asiocore.entity))
+local OnlineEntity = ready(class("FixtureOnlineEntity", asiocore.entity))
 asiocore.regist_class("FixturePlayerEntity", PlayerEntity)
 asiocore.regist_class("FixtureNpcEntity", NpcEntity)
+asiocore.regist_class("FixtureOnlineEntity", OnlineEntity)
 asiocore.set_prop_index(PlayerEntity, PlayerProperties)
 asiocore.set_prop_index(NpcEntity, NpcProperties)
+asiocore.set_prop_index(OnlineEntity, OnlineProperties)
+
+local OnlineArea = ready(class("FixtureOnlineArea", asiocore.area))
+local WorldSpace = ready(class("FixtureWorldSpace", asiocore.space))
 
 local function verify_list_property_boundary()
     local ListWithProps = class("ProbeListWithProps", asiocore.area_list)
@@ -241,6 +265,9 @@ local fixture = {
     npc_properties = {},
     plain_maps = {},
     plain_lists = {},
+    online_entities = {},
+    online_areas = {},
+    online_properties = {},
     schema_holders = schema_holders,
     list_boundary_holder = list_boundary_holder,
     list_boundary_root = list_boundary_root,
@@ -269,12 +296,49 @@ for index = 1, 32 do
     fixture.plain_lists[index] = plain_list
 end
 
+fixture.world_holder = fixture.players[1]
+fixture.world_space = WorldSpace("fixture-world", 1001, fixture.world_holder, dict())
+
+for index = 1, 16 do
+    local entity = OnlineEntity()
+    local area = OnlineArea("FixtureOnlineEntity", false, entity, 0)
+    entity:set_area(area)
+    area:set_space("fixture-world")
+
+    local props = area:prop()
+    props.guid = 300000 + index
+    props.health = 5000 + index
+    props.name = "online-" .. index
+    props.enabled = index % 2 == 0
+    props.nested.score = index * 10
+    props.nested.note = "owned-" .. index
+    props.nested.active = true
+    props.values:append(index)
+    props.values:append(index * 2)
+    props.metadata["shard"] = index % 4
+    props.metadata["source"] = "area_impl"
+
+    assert(area:owner() == entity, "online area owner mismatch")
+    assert(entity:get_area() == area, "online entity area link mismatch")
+    assert(area:get_space() == "fixture-world", "online area space link mismatch")
+    assert(entity.health == props.health, "entity.mimpl_ scalar read mismatch")
+    assert(entity.nested == props.nested, "entity.mimpl_ nested map read mismatch")
+    assert(entity.values == props.values, "entity.mimpl_ nested list read mismatch")
+    assert(entity.metadata == props.metadata, "entity.mimpl_ generic map read mismatch")
+
+    fixture.online_entities[index] = entity
+    fixture.online_areas[index] = area
+    fixture.online_properties[index] = props
+end
+
 _G.MESSIAH_FIXTURE = fixture
 
 local sample = fixture.player_properties[1]
 print("Lua version: " .. _VERSION)
 print("Fixture entities: players=" .. #fixture.players .. " npcs=" .. #fixture.npcs)
 print("Fixture root properties: players=" .. #fixture.player_properties .. " npcs=" .. #fixture.npc_properties)
+print("Fixture online ownership: entities=" .. #fixture.online_entities ..
+    " areas=" .. #fixture.online_areas .. " space=" .. tostring(fixture.world_space))
 print("Fixture nested paths:", tostring(sample.stats:path()), tostring(sample.inventory:path()),
     tostring(sample.inventory[1]:path()), tostring(sample.inventory[1].modifiers:path()),
     tostring(sample.state:path()), tostring(sample.events:path()))

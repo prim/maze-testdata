@@ -12,8 +12,15 @@ import sys
 EXPECTED_ITEMS = {
     "<FixturePlayerEntity instance> [Messiah async::logic::entity]": 96,
     "<FixtureNpcEntity instance> [Messiah async::logic::entity]": 64,
+    "<FixtureOnlineEntity instance> [Messiah async::logic::entity]": 16,
+    "<FixtureOnlineArea instance> [Messiah async::logic::area]": 16,
+    "<FixtureWorldSpace instance> [Messiah async::logic::space_wrapper]": 1,
     "<FixturePlayerProperties instance> [Messiah async::logic::area_map]": 96,
     "<FixtureNpcProperties instance> [Messiah async::logic::area_map]": 64,
+    "<FixtureOnlineProperties instance> [Messiah async::logic::area_map]": 16,
+    "<FixtureOnlineNested instance> [Messiah async::logic::area_map]": 17,
+    "<FixtureOnlineNumbers instance> [Messiah async::logic::area_list]": 17,
+    "<CustomMapType .metadata instance> [Messiah async::logic::area_map]": 16,
     "<CustomMapType .state instance> [Messiah async::logic::area_map]": 96,
     "<CustomListType .events instance> [Messiah async::logic::area_list]": 96,
     "<CustomMapType .stats.labels instance> [Messiah async::logic::area_map]": 160,
@@ -26,17 +33,19 @@ EXPECTED_ITEMS = {
     "<CustomListType .decisions instance> [Messiah async::logic::area_list]": 64,
     "<ProbeListPropertyRoot instance> [Messiah async::logic::area_map]": 1,
     "<ProbeListWithProps instance> [Messiah async::logic::area_list]": 2,
-    "<area_prop_index instance> [Messiah async::logic::area_prop_index_obj]": 6,
+    "<area_prop_index instance> [Messiah async::logic::area_prop_index_obj]": 7,
 }
 
 # Updated after generating the committed fixture from fixture.lua.
 EXPECTED_BINDINGS = {
-    "async::logic::area_list": 1357,
-    "async::logic::area_map": 1800,
-    "async::logic::area_prop_index_obj": 6,
-    "async::logic::entity": 160,
+    "async::logic::area": 16,
+    "async::logic::area_list": 1374,
+    "async::logic::area_map": 1850,
+    "async::logic::area_prop_index_obj": 7,
+    "async::logic::entity": 176,
+    "async::logic::space_wrapper": 1,
 }
-EXPECTED_TOTAL_BINDINGS = 3323
+EXPECTED_TOTAL_BINDINGS = 3424
 
 
 def read_required_file(env_name):
@@ -95,7 +104,7 @@ def validate(data):
     )
     assert total, "missing total Messiah binding count"
     assert int(total.group(1)) == EXPECTED_TOTAL_BINDINGS, total.group(0)
-    assert int(total.group(2)) == 4, total.group(0)
+    assert int(total.group(2)) == 6, total.group(0)
     assert int(total.group(3)) == 0, total.group(0)
     assert "MessiahLuaDeepFallback" not in maze_log
     assert "diff(alloc-mpm)=0B" in maze_log

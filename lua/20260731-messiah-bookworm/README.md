@@ -12,9 +12,12 @@
 - generic map/list 按 property path 拆分。
 - list 自身声明固定 property 不会物化；后续赋值只是普通运行时属性。
 - phmap、fix-props vector、shared_ptr control block 深层 ownership。
+- 真实 `space_wrapper -> area -> entity -> area_impl.props_` 在线 ownership 链。
+- `area_map` 固定 scalar、嵌套 map、typed list 和 generic map 经 `entity.mimpl_` 读取。
 
-fixture 创建 96 个 player entity、64 个 NPC entity，以及对应的 property tree。Lua 全局
-`MESSIAH_FIXTURE` 保持强引用，直到 `maze-gen-coredump.py` 完成抓取。
+fixture 创建 96 个 player entity、64 个 NPC entity、16 个挂入 area/world 的 online entity，以及
+对应的 property tree。Lua 全局 `MESSIAH_FIXTURE` 保持 entity、area、props、space 和 holder 的强引用，
+直到 `maze-gen-coredump.py` 完成抓取。
 
 ## 直接执行
 
@@ -28,7 +31,7 @@ python3 testdata/run_test.py lua/20260731-messiah-bookworm
 runner 会依次执行 Maze tar workflow、生成 `maze-result.json`、加载 `validate.py`。validator 检查：
 
 - entity 和主要 property path 的精确数量；
-- 4 种 Messiah native binding 的精确数量；
+- 6 种 Messiah native binding 的精确数量；
 - `shallow_fallback=0`；
 - `Unknown=0B`；
 - `CountGoroutineError: 0`；
@@ -69,6 +72,34 @@ class_ready(Inventory)
 `fixture.lua` 中的 `verify_list_property_boundary()` 还会在输出 `READY FOR GCORE` 前验证 list 上伪造的
 `label/count` 默认值仍为 `nil`，且不进入 `debug_get_prop_types()`。
 
+## 在线 ownership 脚本
+
+`area` 构造函数和 space 挂接不是常规对象赋值。生产 `asiocore.so` 的实际 Lua 契约是：
+
+```lua
+local space = WorldSpace("fixture-world", 1001, holder, dict())
+local entity = OnlineEntity()
+local area = OnlineArea("FixtureOnlineEntity", false, entity, 0)
+
+entity:set_area(area)
+area:set_space("fixture-world")
+
+local props = area:prop()
+props.health = 5001
+props.nested.score = 10
+
+assert(area:owner() == entity)
+assert(entity:get_area() == area)
+assert(area:get_space() == "fixture-world")
+assert(entity.health == props.health)
+assert(entity.nested == props.nested)
+```
+
+`area:set_space()` 接受 space id 字符串，不接受 `space_wrapper` Instance；`area:get_space()` 也返回
+字符串。`entity:set_area()` 建立 `entity.area_` 和 `entity.mimpl_`，因此 entity 能读取
+`area_impl.props_` 的同一对象图。fixture 从 `area:prop()` 写 native property；直接写
+`entity.health` 会成为普通 Lua 动态字段，不代表写回 native property。
+
 ## 重新构造 fixture
 
 ### 环境证据
@@ -82,6 +113,10 @@ sha256:d02c76d82364cedca16ba3ed6f9102406fa9fa8833076a609cabf14270f43dfc
 
 `Dockerfile` 把 APT 固定到 2024-02-11 Debian snapshot，只安装抓 core 所需的 Python/GDB，避免
 `apt update` 把运行时升级到其他 libc revision。
+
+`prepare_runtime.py` 同时固定 H72 manifest 中的 loader MD5
+`395f1f15882967bfbff866832ccac983`；该文件的 banner 是
+`Debian GLIBC 2.36-9+deb12u4`，与 libc 和固定镜像一致。
 
 ### 从已提交 fixture 恢复运行时
 
@@ -119,14 +154,15 @@ python3 testdata/lua/20260731-messiah-bookworm/generate_fixture.py \
 当前提交 fixture：
 
 ```text
-file:   coredump-59-1785539092.tar.gz
-size:   226,699,364 bytes
-sha256: 6c649ebb58930b1f6825170f34db6f77f21a80e7eff0188a7bd44d8b546a8c1b
+file:   coredump-59-1785540667.tar.gz
+size:   226,734,785 bytes
+sha256: 33df122de3a40e54f96e63f1bb6f0dfc31b39528cb1e22a56935ca4300143a27
 ```
 
-其正式基线为 `area_map=1800`、`area_list=1357`、`area_prop_index_obj=6`、
-`entity=160`，共 `3323` 个 Messiah native bindings。新增的 list property boundary probe 相比
-前一版 seed 增加 1 个 map、2 个 list 和 1 个 property index binding。
+其正式基线为 `area=16`、`area_map=1850`、`area_list=1374`、
+`area_prop_index_obj=7`、`entity=176`、`space_wrapper=1`，共 `3424` 个 Messiah native
+bindings。在线 schema 的 class/default 对象使 `FixtureOnlineNested` 和 `FixtureOnlineNumbers`
+各为 17 个：1 个 schema 实例加 16 个在线对象实例。
 
 ## 文件说明
 
