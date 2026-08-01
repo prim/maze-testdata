@@ -321,10 +321,21 @@ for index = 1, 16 do
     assert(area:owner() == entity, "online area owner mismatch")
     assert(entity:get_area() == area, "online entity area link mismatch")
     assert(area:get_space() == "fixture-world", "online area space link mismatch")
-    assert(entity.health == props.health, "entity.mimpl_ scalar read mismatch")
+    assert(entity.health == props.health,
+        "entity.mimpl_ scalar read mismatch: entity=" .. tostring(entity.health) ..
+        " props=" .. tostring(props.health))
     assert(entity.nested == props.nested, "entity.mimpl_ nested map read mismatch")
     assert(entity.values == props.values, "entity.mimpl_ nested list read mismatch")
     assert(entity.metadata == props.metadata, "entity.mimpl_ generic map read mismatch")
+
+    props.health = props.health + 1
+    assert(entity.health == props.health, "native property writeback mismatch")
+    if index == 1 then
+        local native_health = props.health
+        entity.health = native_health + 100000
+        assert(props.health == native_health, "entity dynamic field leaked into native props")
+        assert(entity.health == native_health + 100000, "entity dynamic field write mismatch")
+    end
 
     fixture.online_entities[index] = entity
     fixture.online_areas[index] = area

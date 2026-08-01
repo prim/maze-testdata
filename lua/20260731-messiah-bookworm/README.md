@@ -93,12 +93,25 @@ assert(entity:get_area() == area)
 assert(area:get_space() == "fixture-world")
 assert(entity.health == props.health)
 assert(entity.nested == props.nested)
+
+props.health = props.health + 1       -- native property 的正式写入口
+assert(entity.health == props.health)
+
+local native_health = props.health
+entity.health = native_health + 100000
+assert(props.health == native_health) -- 只是 entity 的 Lua 动态字段
+assert(entity.health ~= props.health) -- 同名动态字段遮蔽 mimpl_ 读取
 ```
 
 `area:set_space()` 接受 space id 字符串，不接受 `space_wrapper` Instance；`area:get_space()` 也返回
 字符串。`entity:set_area()` 建立 `entity.area_` 和 `entity.mimpl_`，因此 entity 能读取
 `area_impl.props_` 的同一对象图。fixture 从 `area:prop()` 写 native property；直接写
 `entity.health` 会成为普通 Lua 动态字段，不代表写回 native property。
+`asiocore.entity` 的 Lua method 表也没有 native setter；读路径和写路径有意不对称：entity 经
+`mimpl_` 读取，写入必须经 `entity:get_area():prop()`（或已保存的 `props`）完成。fixture 会先写
+`props` 并由 entity 读取，随后只在第一个在线 entity 上写同名动态字段，确认 native 值未变且读取
+被遮蔽。生产扩展中再赋 `nil` 也不能可靠恢复这个 fallback，因此业务代码不应直接写 property 同名
+的 entity 字段。
 
 ## 重新构造 fixture
 
@@ -154,9 +167,9 @@ python3 testdata/lua/20260731-messiah-bookworm/generate_fixture.py \
 当前提交 fixture：
 
 ```text
-file:   coredump-59-1785540667.tar.gz
-size:   226,734,785 bytes
-sha256: 33df122de3a40e54f96e63f1bb6f0dfc31b39528cb1e22a56935ca4300143a27
+file:   coredump-59-1785543643.tar.gz
+size:   226,741,195 bytes
+sha256: d80ac1641c35196c93d4c5dcbc7c24c94e83e02ba326edae81e0859c43ad48bf
 ```
 
 其正式基线为 `area=16`、`area_map=1850`、`area_list=1374`、
