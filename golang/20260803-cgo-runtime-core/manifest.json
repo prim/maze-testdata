@@ -1,0 +1,72 @@
+{
+  "artifact": {
+    "bytes": 10981205,
+    "core_logical_bytes": 1889894616,
+    "members": [
+      {
+        "name": "13c41108d8ca98c6aacd870b11692ef2",
+        "size": 14504
+      },
+      {
+        "name": "3416809.exe",
+        "size": 72
+      },
+      {
+        "name": "3416809.md5",
+        "size": 425
+      },
+      {
+        "name": "622fdef02b0fbca5cef07366e4eeb387",
+        "size": 1901536
+      },
+      {
+        "name": "791f890164e45876863a379f3cc80d7d",
+        "size": 149520
+      },
+      {
+        "name": "core.3416809",
+        "size": 1889894616
+      },
+      {
+        "name": "d7a03e4528dace366548efbf4afe665d",
+        "size": 2268000
+      },
+      {
+        "name": "d9db83d6fe6616e0e10ee9e1f4abbb61",
+        "size": 177928
+      },
+      {
+        "name": "libthread_db.so",
+        "size": 35672
+      },
+      {
+        "name": "maps",
+        "size": 7219
+      }
+    ],
+    "path": "coredump-cgo-runtime-core.tar.gz",
+    "sha256": "39e4ff4f553319eb644984b5f4c324df959de12080d2b66b3e7141a447b1f140"
+  },
+  "build": {
+    "binary_sha256": "f834ef8fd52366cdbc9bac2bfe959d02642096ff4ce7927dff5d8746822eef6d",
+    "cgo_enabled": true,
+    "command": "CGO_ENABLED=1 go build -trimpath -buildvcs=false",
+    "toolchain": "go version go1.25.6 linux/amd64"
+  },
+  "expected": {
+    "go_large_bytes": 8388608,
+    "goarch": "amd64",
+    "goos": "linux",
+    "main_node_bytes": 6144,
+    "main_node_count": 128,
+    "native_large_request_bytes": 25165824,
+    "native_small_count": 4096,
+    "native_small_request_bytes": 1024
+  },
+  "name": "go-cgo-runtime-core",
+  "schema": "maze.golang.fixture/v1",
+  "source": {
+    "path": "fixture.go",
+    "sha256": "aa8923dcf10755f24c68242fb3987aa10be9fc4e8968087a149aa99b022f8094"
+  }
+}

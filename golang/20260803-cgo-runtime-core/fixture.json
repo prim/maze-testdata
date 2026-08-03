@@ -1,0 +1,17 @@
+{
+  "build": {
+    "cgo_enabled": true,
+    "command": "CGO_ENABLED=1 go build -trimpath -buildvcs=false"
+  },
+  "expected": {
+    "go_large_bytes": 8388608,
+    "goarch": "amd64",
+    "goos": "linux",
+    "main_node_bytes": 6144,
+    "main_node_count": 128,
+    "native_large_request_bytes": 25165824,
+    "native_small_count": 4096,
+    "native_small_request_bytes": 1024
+  },
+  "name": "go-cgo-runtime-core"
+}

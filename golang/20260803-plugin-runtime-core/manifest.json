@@ -1,0 +1,95 @@
+{
+  "artifact": {
+    "bytes": 13817632,
+    "core_logical_bytes": 1862465424,
+    "members": [
+      {
+        "name": "13c41108d8ca98c6aacd870b11692ef2",
+        "size": 14504
+      },
+      {
+        "name": "24b07cf05b9bb5784e543ec84b2a8975",
+        "size": 2132232
+      },
+      {
+        "name": "3462037.exe",
+        "size": 75
+      },
+      {
+        "name": "3462037.md5",
+        "size": 632
+      },
+      {
+        "name": "380061e32442beddc07979d12fc4a1e8",
+        "size": 18688
+      },
+      {
+        "name": "622fdef02b0fbca5cef07366e4eeb387",
+        "size": 1901536
+      },
+      {
+        "name": "791f890164e45876863a379f3cc80d7d",
+        "size": 149520
+      },
+      {
+        "name": "core.3462037",
+        "size": 1862465424
+      },
+      {
+        "name": "d28cba4fc38e4a43be49d87d0ed71a53",
+        "size": 4752768
+      },
+      {
+        "name": "d9db83d6fe6616e0e10ee9e1f4abbb61",
+        "size": 177928
+      },
+      {
+        "name": "libthread_db.so",
+        "size": 35672
+      },
+      {
+        "name": "maps",
+        "size": 7399
+      }
+    ],
+    "path": "coredump-plugin-runtime-core.tar.gz",
+    "sha256": "bfe0a7c936a1c58c1bacef59c3736fcdc12894d6d273918bd84f53655f13b7d0"
+  },
+  "build": {
+    "artifacts": {
+      "plugin": {
+        "path": "fixture_plugin.so",
+        "sha256": "8e45da3adf5c029657819897e4be7e4c76bef155d0c9692ff774124aa510ad6c"
+      }
+    },
+    "binary_sha256": "59d13eaf62b6bf696085709dfe3412d775a4e9a97a594851f80becfc01f1dbfd",
+    "cgo_enabled": true,
+    "command": "CGO_ENABLED=1 go build -trimpath -buildvcs=false -buildmode=plugin; CGO_ENABLED=1 go build -trimpath -buildvcs=false",
+    "toolchain": "go version go1.25.6 linux/amd64"
+  },
+  "expected": {
+    "goarch": "amd64",
+    "goos": "linux",
+    "plugin_large_bytes": 5242880,
+    "plugin_node_bytes": 15360,
+    "plugin_node_count": 192,
+    "plugin_payload_bytes": 786432,
+    "plugin_payload_count": 192
+  },
+  "name": "go-plugin-runtime-core",
+  "schema": "maze.golang.fixture/v1",
+  "source": {
+    "path": "fixture.go",
+    "sha256": "4d8f04b1cd1fb8f0bd7cbfae6dc60e74995130a9125315189f3bc63de997f852"
+  },
+  "sources": [
+    {
+      "path": "fixture.go",
+      "sha256": "4d8f04b1cd1fb8f0bd7cbfae6dc60e74995130a9125315189f3bc63de997f852"
+    },
+    {
+      "path": "fixture_plugin.go",
+      "sha256": "3189ebd907c2a4203df0e20e08bc829d781028bec5b956fd8b4dcfa605eb0166"
+    }
+  ]
+}

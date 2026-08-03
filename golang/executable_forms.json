@@ -1,0 +1,17 @@
+{
+  "schema": "maze.golang.executable-forms/v1",
+  "cases": [
+    {
+      "directory": "20260803-pie-runtime-core",
+      "go_version": "go1.25.6",
+      "artifact": "coredump-pie-runtime-core.tar.gz",
+      "form": "pie"
+    },
+    {
+      "directory": "20260803-stripped-runtime-core",
+      "go_version": "go1.25.6",
+      "artifact": "coredump-stripped-runtime-core.tar.gz",
+      "form": "stripped-runtime-debug-elf"
+    }
+  ]
+}

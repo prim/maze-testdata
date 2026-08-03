@@ -23,6 +23,69 @@ python3 testdata/run_test.py cpp/20260210-jemalloc-5-0-0 cpp/20260210-jemalloc-5
 python3 testdata/run_test.py --py-merge python/20260201-class-merge
 ```
 
+### Go runtime core
+
+```bash
+# Go 1.20.14-1.26.0 durable pure-Go matrix；hash 校验后串行回放
+python3 testdata/golang/run_runtime_matrix.py
+
+# 使用精确 toolchain 串行重抓全部版本
+python3 testdata/golang/run_runtime_matrix.py --generate
+
+# 固定 pure-Go runtime/object/root/garbage/dominator 回归
+python3 testdata/run_test.py golang/20260803-runtime-core
+
+# 同一进程中的 Go runtime + cgo/glibc ptmalloc 回归
+python3 testdata/run_test.py golang/20260803-cgo-runtime-core
+
+# Go plugin、多 moduledata、external ELF DWARF 和 plugin global roots 回归
+python3 testdata/run_test.py golang/20260803-plugin-runtime-core
+
+# durable PIE 与 stripped runtime + exact DWARF ELF，含 ELF/Build ID 校验
+python3 testdata/golang/run_executable_forms.py
+
+# durable artifact 派生的 15 项缺页、损坏 runtime/DWARF/GC program 和错误 ELF
+./maze --build
+python3 testdata/golang/run_corrupt_matrix.py
+
+# 可选的 pure-Go live PID -> exact core tar -> replay 全输出等价性回归
+./maze --build
+MAZE_GOCORE_LIVE_TAR_INTEGRATION=1 \
+  go test ./golang_runtime -run '^TestMazeLiveTarEquivalence$' -count=1 -v
+
+# 可选的 cgo + ptmalloc live/tar 全输出等价性回归
+MAZE_GOCORE_CGO_LIVE_TAR_INTEGRATION=1 \
+  go test ./golang_runtime -run '^TestMazeCgoLiveTarEquivalence$' -count=1 -v
+
+# 真实 200,000-object live/core CPU、RSS、输出规模门槛
+PYTHONDONTWRITEBYTECODE=1 \
+  python3 testdata/golang/run_performance_gate.py
+```
+
+七版本 pure-Go matrix、cgo/plugin 和两个 executable-form fixture 都包含 source、
+generator、validator、machine-readable manifest 和压缩 core artifact。runner
+还验证 tar 中确实包含 binary SHA-256 匹配的 executable。PIE case 固定 ET_DYN
+和 ASLR；stripped case 同时固定无 DWARF runtime ELF、匹配的 DWARF ELF 和相同
+Go Build ID。plugin case 要求恢复 192 个插件定义节点、
+192 个 4 KiB backing array、一个 plugin-only 5 MiB array 和插件栈帧，并保留
+真实 `r--p/r-xp/rw-p` maps。Go 1.23 matrix replay 会额外验证没有 DWARF type
+mapping 的 reflect-generated 20,000-pointer GC program。corrupt matrix 还要求
+CoreInput v2 拒绝内容 SHA-256 不匹配但 PT_LOAD 布局相同的 substitute plugin；
+前 14 个早期失败只有 header + diagnostic，第 15 个 GC-program 晚期失败以第
+43 条 fatal diagnostic 结束，所有失败都不得有 trailer 或原始 panic stack。
+pure-Go/cgo live/tar 集成检查目标进程在 GDB detach 后仍存活、text 字节一致，并要求 JSON 除
+`generated_at` 外结构完全一致；cgo 的 native class ID 不做归一化。动态产物
+分别位于 `./tmp/golang-live-tar/` 和 `./tmp/golang-cgo-live-tar/`，测试串行执行，
+并恢复仓库根既有 result/log 文件。
+
+性能 runner 使用 Go 1.25.6 构造精确 200,000 个独立 64-byte
+`main.benchNode`，每 20 ms 采样完整 Maze/helper 进程树；它校验 typed object
+数量、完整 NDJSON trailer/count/hash、Maze class 汇总，并对 wall、child CPU、
+peak RSS、NDJSON/JSON bytes 和 graph 数量执行数值门槛。结果位于
+`./tmp/golang-performance-gate/results.json`。低于 200,000 对象必须显式加
+`--smoke`，不计入发布验收；加 `--keep-large-artifacts` 才保留 sparse core 和
+完整 helper NDJSON。
+
 ## 生成测试用的 coredump tar.gz
 
 ### 流程
@@ -58,6 +121,18 @@ mv coredump-<pid>-*.tar.gz testdata/cpp/20260211-jemalloc-5-3-0-multithread/
 rm testdata/cpp/20260211-jemalloc-5-3-0-multithread/core.<pid>
 kill <pid>
 ```
+
+如果抓 core 时同时保存了准确的 `/proc/<pid>/maps`，应显式传入，避免仅由
+core/GDB 重建时丢失线程栈和内核辅助映射：
+
+```bash
+python3 cmd/maze-tar-coredump.py \
+  --maps testdata/cpp/<case>/maps.snapshot \
+  testdata/cpp/<case>/core.<pid>
+```
+
+未提供 `--maps` 时仍保留原有 GDB fallback，适用于目标进程已经退出、只有
+core 的场景。
 
 ### 踩坑点
 

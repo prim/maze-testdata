@@ -1,0 +1,16 @@
+{
+  "build": {
+    "cgo_enabled": true,
+    "command": "CGO_ENABLED=1 go build -trimpath -buildvcs=false -buildmode=plugin; CGO_ENABLED=1 go build -trimpath -buildvcs=false"
+  },
+  "expected": {
+    "goarch": "amd64",
+    "goos": "linux",
+    "plugin_large_bytes": 5242880,
+    "plugin_node_bytes": 15360,
+    "plugin_node_count": 192,
+    "plugin_payload_bytes": 786432,
+    "plugin_payload_count": 192
+  },
+  "name": "go-plugin-runtime-core"
+}

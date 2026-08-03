@@ -1,0 +1,40 @@
+{
+  "schema": "maze.golang.runtime-matrix/v1",
+  "cases": [
+    {
+      "directory": "20260803-runtime-core-go1.20.14",
+      "go_version": "go1.20.14",
+      "artifact": "coredump-runtime-core-go1.20.14.tar.gz"
+    },
+    {
+      "directory": "20260803-runtime-core-go1.21.13",
+      "go_version": "go1.21.13",
+      "artifact": "coredump-runtime-core-go1.21.13.tar.gz"
+    },
+    {
+      "directory": "20260803-runtime-core-go1.22.0",
+      "go_version": "go1.22.0",
+      "artifact": "coredump-runtime-core-go1.22.0.tar.gz"
+    },
+    {
+      "directory": "20260803-runtime-core-go1.23.0",
+      "go_version": "go1.23.0",
+      "artifact": "coredump-runtime-core-go1.23.0.tar.gz"
+    },
+    {
+      "directory": "20260803-runtime-core-go1.24.0",
+      "go_version": "go1.24.0",
+      "artifact": "coredump-runtime-core-go1.24.0.tar.gz"
+    },
+    {
+      "directory": "20260803-runtime-core",
+      "go_version": "go1.25.6",
+      "artifact": "coredump-runtime-core.tar.gz"
+    },
+    {
+      "directory": "20260803-runtime-core-go1.26.0",
+      "go_version": "go1.26.0",
+      "artifact": "coredump-runtime-core-go1.26.0.tar.gz"
+    }
+  ]
+}

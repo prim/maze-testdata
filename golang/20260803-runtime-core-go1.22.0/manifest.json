@@ -1,0 +1,55 @@
+{
+  "artifact": {
+    "bytes": 7108087,
+    "core_logical_bytes": 1255457984,
+    "members": [
+      {
+        "name": "3487832.exe",
+        "size": 86
+      },
+      {
+        "name": "3487832.md5",
+        "size": 126
+      },
+      {
+        "name": "7c75352a6b3abeaa7831103090ada7ea",
+        "size": 1919471
+      },
+      {
+        "name": "core.3487832",
+        "size": 1255457984
+      },
+      {
+        "name": "libthread_db.so",
+        "size": 35672
+      },
+      {
+        "name": "maps",
+        "size": 1636
+      }
+    ],
+    "path": "coredump-runtime-core-go1.22.0.tar.gz",
+    "sha256": "8ecd8c5eb3aab7a9470cdd86c7d675140f7543b6885aff12ec60527c9d4b9722"
+  },
+  "build": {
+    "binary_sha256": "a0b38542ab8a1d99e664f5cddc5e472caf10e75187959f83e8609b8e65412143",
+    "cgo_enabled": false,
+    "command": "GOTOOLCHAIN=go1.22.0 CGO_ENABLED=0 go build -trimpath -buildvcs=false",
+    "toolchain": "go version go1.22.0 linux/amd64"
+  },
+  "expected": {
+    "global_byte_array_bytes": 3145728,
+    "go_version": "go1.22.0",
+    "goarch": "amd64",
+    "goos": "linux",
+    "main_node_bytes": 20480,
+    "main_node_count": 256,
+    "minimum_garbage_bytes": 2097152
+  },
+  "name": "go-runtime-core-go1.22.0",
+  "schema": "maze.golang.fixture/v1",
+  "source": {
+    "path": "fixture.go",
+    "sha256": "5284f40a90042070b4816e96b2fa0fcf92848932c497c4065c6fff097ddc2aa0"
+  }
+}

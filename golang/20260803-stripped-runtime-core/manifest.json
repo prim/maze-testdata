@@ -1,0 +1,66 @@
+{
+  "artifact": {
+    "bytes": 8102964,
+    "core_logical_bytes": 1256563584,
+    "members": [
+      {
+        "name": "3691650.exe",
+        "size": 94
+      },
+      {
+        "name": "3691650.md5",
+        "size": 134
+      },
+      {
+        "name": "core.3691650",
+        "size": 1256563584
+      },
+      {
+        "name": "d01adca0a4442e166f97998bbe746763",
+        "size": 2279752
+      },
+      {
+        "name": "libthread_db.so",
+        "size": 35672
+      },
+      {
+        "name": "maps",
+        "size": 1660
+      },
+      {
+        "name": "runtime-stripped",
+        "size": 1514200
+      }
+    ],
+    "path": "coredump-stripped-runtime-core.tar.gz",
+    "sha256": "c78870b31b1c9ed4003ddaeda580740ac8e01b18590d8ef017b5c350cb1b1d38"
+  },
+  "build": {
+    "artifacts": {
+      "runtime": {
+        "path": "fixture-runtime",
+        "sha256": "d1cf182e8b23e70b1f03d9afaee7edf0a973b725303b8a3a833ce1f51608ea50"
+      }
+    },
+    "binary_sha256": "cca90c543d9dc2451f93c75cd797a4c1c97c57657f3fa1c4071cc75f8c5266e7",
+    "cgo_enabled": false,
+    "command": "GOTOOLCHAIN=go1.25.6 CGO_ENABLED=0 go build -trimpath -buildvcs=false; strip --strip-all runtime",
+    "form": "stripped-runtime-debug-elf",
+    "toolchain": "go version go1.25.6 linux/amd64"
+  },
+  "expected": {
+    "global_byte_array_bytes": 3145728,
+    "go_version": "go1.25.6",
+    "goarch": "amd64",
+    "goos": "linux",
+    "main_node_bytes": 20480,
+    "main_node_count": 256,
+    "minimum_garbage_bytes": 2097152
+  },
+  "name": "go-stripped-runtime-core",
+  "schema": "maze.golang.fixture/v1",
+  "source": {
+    "path": "fixture.go",
+    "sha256": "7585c9920414f46e332b9a712d96925404c9518cefa8e74bf95682f9943f83d4"
+  }
+}
