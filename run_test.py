@@ -196,6 +196,7 @@ def run_maze_analysis(
     py_merge=False,
     no_cpp=False,
     verbose_maze=False,
+    dotnet_values=False,
 ):
     """执行 maze 分析
 
@@ -236,6 +237,9 @@ def run_maze_analysis(
 
     if no_cpp:
         cmd.append("--no-cpp")
+
+    if dotnet_values:
+        cmd.append("--dotnet-values")
 
     print("Running Maze Analysis")
     print("Command: %s" % " ".join(cmd))
@@ -369,9 +373,12 @@ def run_test(test_dir, py_merge=False, verbose_maze=False):
     no_cpp = os.path.exists(os.path.join(abs_test_dir, "no-cpp")) or (
         test_dir.startswith("cpp/") and "jemalloc" in test_dir
     )
+    dotnet_values = os.path.exists(os.path.join(abs_test_dir, "dotnet-values"))
 
     if no_cpp:
         mode_parts.append("--no-cpp")
+    if dotnet_values:
+        mode_parts.append("--dotnet-values")
 
     mode_str = ""
     if mode_parts:
@@ -386,6 +393,7 @@ def run_test(test_dir, py_merge=False, verbose_maze=False):
         py_merge=py_merge,
         no_cpp=no_cpp,
         verbose_maze=verbose_maze,
+        dotnet_values=dotnet_values,
     )
 
     # 3. 加载结果
