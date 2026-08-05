@@ -99,3 +99,22 @@ development run requires `--smoke`; `--keep-large-artifacts` retains the sparse
 core and full helper NDJSON. Otherwise only the result, logs, fixture binary,
 and Maze output remain under `./tmp/golang-performance-gate/`, and existing
 repository-root result/log files are restored.
+
+Run the small live type-evidence demonstration when changing Go type
+propagation or documenting unknown-object semantics:
+
+```bash
+mkdir -p tmp/go-type-recovery-limits
+go build -o tmp/go-type-recovery-limits/go-type-recovery-limits \
+  testdata/golang/20260805-type-recovery-limits-live/type_recovery_limits.go
+tmp/go-type-recovery-limits/go-type-recovery-limits
+```
+
+`20260805-type-recovery-limits-live` prints controlled addresses for same-size
+typed, `unsafe.Pointer`, closure-captured, and stack-root objects, plus an
+interior-only object and a `reflect.StructOf` value. It also creates 10,000
+unrooted `A <-> B` pairs. Query the printed addresses with `/api/go/object` and
+`/api/go/reachable`; do not infer fixture counts from all process-wide
+`unk<size>` classes. The unrooted pairs must contribute only aggregate garbage
+bytes and must not appear as individual `main.GarbageA`/`main.GarbageB`
+objects.
