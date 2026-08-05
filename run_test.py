@@ -197,6 +197,7 @@ def run_maze_analysis(
     no_cpp=False,
     verbose_maze=False,
     dotnet_values=False,
+    unset_erlang_layout=False,
 ):
     """执行 maze 分析
 
@@ -261,9 +262,14 @@ def run_maze_analysis(
     maze_output_path = os.path.join(tmp_dir, "%s.maze-output.log" % log_name)
 
     # 在 maze 根目录执行
+    process_env = os.environ.copy()
+    if unset_erlang_layout:
+        process_env.pop("MAZE_ERLANG_LAYOUT", None)
+
     process = subprocess.Popen(
         cmd,
         cwd=maze_root,
+        env=process_env,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         universal_newlines=True,
@@ -374,11 +380,16 @@ def run_test(test_dir, py_merge=False, verbose_maze=False):
         test_dir.startswith("cpp/") and "jemalloc" in test_dir
     )
     dotnet_values = os.path.exists(os.path.join(abs_test_dir, "dotnet-values"))
+    unset_erlang_layout = os.path.exists(
+        os.path.join(abs_test_dir, "erlang-bundled-layout")
+    )
 
     if no_cpp:
         mode_parts.append("--no-cpp")
     if dotnet_values:
         mode_parts.append("--dotnet-values")
+    if unset_erlang_layout:
+        mode_parts.append("embedded Erlang layout")
 
     mode_str = ""
     if mode_parts:
@@ -394,6 +405,7 @@ def run_test(test_dir, py_merge=False, verbose_maze=False):
         no_cpp=no_cpp,
         verbose_maze=verbose_maze,
         dotnet_values=dotnet_values,
+        unset_erlang_layout=unset_erlang_layout,
     )
 
     # 3. 加载结果
