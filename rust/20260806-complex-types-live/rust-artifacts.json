@@ -4,8 +4,9 @@
   "cargo_profile": "dev",
   "debug_level": "2",
   "executable": {
-    "sha256": "e769df58d127abdb3c90e5bba1b1a55542b12a01b85c0cb6ff7fa061074dc7e8",
-    "size": 5836248
+    "build_id": "e5c4aa17f32d51c0d5b3e9229c7ceff15c61b20f",
+    "sha256": "152118ecb22ab2b6011fcf0479961646edd33da91b136a204f9bb42a185c03bd",
+    "size": 5987136
   },
   "host_triple": "x86_64-unknown-linux-gnu",
   "llvm_version": "22.1.6",

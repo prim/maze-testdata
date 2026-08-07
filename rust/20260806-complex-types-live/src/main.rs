@@ -14,6 +14,7 @@ use std::cell::RefCell;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::ffi::c_void;
 use std::io::Write;
+use std::mem::size_of;
 use std::rc::Rc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
@@ -160,14 +161,50 @@ fn addr_of<T>(ptr: *const T) -> usize {
     ptr as usize
 }
 
+// LIVE_ALLOCS records every fixture allocation whose requested byte size is
+// exactly knowable, together with its live address. Phase 1 reconciles the sum
+// against the allocator walker: the recovered ptmalloc total must cover every
+// byte the fixture knows is still alive.
+static LIVE_ALLOCS: OnceLock<Mutex<Vec<(usize, usize)>>> = OnceLock::new();
+
+fn record_live(addr: usize, bytes: usize) {
+    if addr == 0 || bytes == 0 {
+        return;
+    }
+    let list = LIVE_ALLOCS.get_or_init(|| Mutex::new(Vec::new()));
+    list.lock().unwrap().push((addr, bytes));
+    truth_kv_usize(&format!("live_{}", list.lock().unwrap().len()), addr);
+}
+
+// RcBox<T>/ArcInner<T> allocation size: the shared header is two 8-byte counts
+// on x86-64, laid out before the value.
+fn record_shared(addr: usize, value_size: usize) {
+    record_live(addr, value_size + 16);
+}
+
 fn write_ground_truth() {
     let buffer = TRUTH.get_or_init(|| Mutex::new(Vec::new()));
     let values = buffer.lock().unwrap().clone();
+    let live = LIVE_ALLOCS.get_or_init(|| Mutex::new(Vec::new()));
+    let live_list = live.lock().unwrap().clone();
+    let known_live_ptmalloc: usize = live_list.iter().map(|&(_, size)| size).sum();
     let mut body = String::from("{\n");
-    for (i, (k, v)) in values.iter().enumerate() {
-        let comma = if i + 1 == values.len() { "" } else { "," };
-        body.push_str(&format!("  {:?}: {:?}{}\n", k, v, comma));
+    for (k, v) in values.iter() {
+        // known_live_* fields are always appended after the loop, so every
+        // value pair needs a trailing comma.
+        body.push_str(&format!("  {:?}: {:?},\n", k, v));
     }
+    body.push_str(&format!(
+        "  \"known_live_ptmalloc\": \"{:#x}\",\n",
+        known_live_ptmalloc
+    ));
+    body.push_str(&format!(
+        "  \"live_allocations\": {:?}\n",
+        live_list
+            .iter()
+            .map(|(a, s)| format!("{:#x}:{:#x}", a, s))
+            .collect::<Vec<_>>()
+    ));
     body.push_str("}\n");
     let mut file = std::fs::File::create("rust-fixture-ground-truth.json")
         .expect("create ground truth file");
@@ -206,6 +243,7 @@ fn main() {
         );
         Mutex::new(map)
     });
+    truth_kv_usize("static_GLOBAL_CACHE", std::ptr::addr_of!(GLOBAL_CACHE) as usize);
     {
         let map = cache.lock().unwrap();
         truth_kv_usize("global_cache_addr", addr_of(&*map));
@@ -216,9 +254,13 @@ fn main() {
             truth_kv_usize("box_bob_addr", addr_of(person));
             truth_kv_usize("box_bob_name_ptr", addr_of(person.name.as_ptr()));
             truth_kv_usize("box_bob_name_len", person.name.len());
+            truth_kv_usize("box_bob_name_cap", person.name.capacity());
             truth_kv_usize("box_bob_tags_ptr", addr_of(person.tags.as_ptr()));
             truth_kv_usize("box_bob_tags_len", person.tags.len());
             truth_kv_usize("box_bob_tags_cap", person.tags.capacity());
+            record_live(addr_of(person), size_of::<Person>());
+            record_live(person.name.as_ptr() as usize, person.name.capacity() + 1);
+            record_live(person.tags.as_ptr() as usize, person.tags.capacity() * size_of::<String>());
         }
     }
 
@@ -229,8 +271,11 @@ fn main() {
         v.push(Box::new(Cat { name: "tama".to_string() }));
         v
     });
+    truth_kv_usize("static_GLOBAL_SPEAKERS", std::ptr::addr_of!(GLOBAL_SPEAKERS) as usize);
     truth_kv_usize("speakers_ptr", addr_of(speakers.as_ptr()));
     truth_kv_usize("speakers_len", speakers.len());
+    truth_kv_usize("speakers_cap", speakers.capacity());
+    record_live(speakers.as_ptr() as usize, speakers.capacity() * size_of::<Box<dyn Speaker>>());
 
     // -- Vec<Person> backing --------------------------------------------------
     let people = GLOBAL_VEC.get_or_init(|| {
@@ -240,9 +285,11 @@ fn main() {
             Person { name: "p3".to_string(), age: 3, tags: vec!["y".to_string(), "z".to_string()] },
         ]
     });
+    truth_kv_usize("static_GLOBAL_VEC", std::ptr::addr_of!(GLOBAL_VEC) as usize);
     truth_kv_usize("vec_ptr", addr_of(people.as_ptr()));
     truth_kv_usize("vec_len", people.len());
     truth_kv_usize("vec_cap", people.capacity());
+    record_live(people.as_ptr() as usize, people.capacity() * size_of::<Person>());
 
     // -- Rc cycle (Rc + Weak) -------------------------------------------------
     let a = Rc::new(RcNode {
@@ -259,6 +306,8 @@ fn main() {
     *b.back.borrow_mut() = Some(Rc::downgrade(&a));
     truth_kv_usize("rc_cycle_a_addr", addr_of(Rc::as_ptr(&a)));
     truth_kv_usize("rc_cycle_b_addr", addr_of(Rc::as_ptr(&b)));
+    record_shared(addr_of(Rc::as_ptr(&a)), size_of::<RcNode>());
+    record_shared(addr_of(Rc::as_ptr(&b)), size_of::<RcNode>());
     drop(b);
 
     // -- Arc shared node -------------------------------------------------------
@@ -267,7 +316,9 @@ fn main() {
         next: Mutex::new(None),
         back: Mutex::new(None),
     }));
+    truth_kv_usize("static_GLOBAL_ARC_NODE", std::ptr::addr_of!(GLOBAL_ARC_NODE) as usize);
     truth_kv_usize("arc_node_addr", addr_of(Arc::as_ptr(arc_node)));
+    record_shared(addr_of(Arc::as_ptr(arc_node)), size_of::<ArcNode>());
     {
         let clone = Arc::clone(arc_node);
         let strong = Arc::strong_count(&clone);
@@ -279,6 +330,7 @@ fn main() {
 
     // -- HashSet / VecDeque ----------------------------------------------------
     let set = GLOBAL_SET.get_or_init(|| (0u64..64).collect());
+    truth_kv_usize("static_GLOBAL_SET", std::ptr::addr_of!(GLOBAL_SET) as usize);
     truth_kv_usize("hashset_len", set.len());
     let deque = GLOBAL_DEQUE.get_or_init(|| {
         let mut d = VecDeque::new();
@@ -287,6 +339,7 @@ fn main() {
         }
         d
     });
+    truth_kv_usize("static_GLOBAL_DEQUE", std::ptr::addr_of!(GLOBAL_DEQUE) as usize);
     truth_kv_usize("vecdeque_len", deque.len());
     truth_kv_usize("vecdeque_cap", deque.capacity());
 
@@ -294,8 +347,10 @@ fn main() {
     let backing: &'static [u64] =
         Box::leak(vec![1u64, 2, 3, 4, 5, 6, 7, 8].into_boxed_slice());
     let _ = GLOBAL_SLICE_VIEW.set(backing);
+    truth_kv_usize("static_GLOBAL_SLICE_VIEW", std::ptr::addr_of!(GLOBAL_SLICE_VIEW) as usize);
     truth_kv_usize("slice_ptr", addr_of(backing.as_ptr()));
     truth_kv_usize("slice_len", backing.len());
+    record_live(backing.as_ptr() as usize, backing.len() * size_of::<u64>());
 
     // -- TLS --------------------------------------------------------------------
     TLS_BUFFER.with(|cell| {
@@ -304,6 +359,7 @@ fn main() {
             truth_kv_usize("tls_buffer_ptr", addr_of(buf.as_ptr()));
             truth_kv_usize("tls_buffer_len", buf.len());
             truth_kv_usize("tls_buffer_cap", buf.capacity());
+            record_live(buf.as_ptr() as usize, buf.capacity() * size_of::<u64>());
         }
     });
     TLS_COUNTER.with(|c| {
@@ -333,29 +389,40 @@ fn main() {
 
     // -- async generator state (leaked on the heap, address recorded) -----------
     let boxed = Box::new(pending_task(42));
+    let generator_size = std::mem::size_of_val(&*boxed);
     let raw = Box::into_raw(boxed);
     let _ = GLOBAL_FUTURE_ADDR.set(raw as usize);
+    truth_kv_usize("static_GLOBAL_FUTURE_ADDR", std::ptr::addr_of!(GLOBAL_FUTURE_ADDR) as usize);
     truth_kv_usize("future_addr", raw as usize);
+    truth_kv_usize("future_size", generator_size);
+    record_live(raw as usize, generator_size);
 
     // -- FFI C allocation + mmap (deliberately untyped from Rust's view) -------
     let c_class = unsafe { malloc(4096) };
     if !c_class.is_null() {
         unsafe { *(c_class as *mut u8) = 0xAB };
         let _ = GLOBAL_C_CLASS_ADDR.set(c_class as usize);
+        truth_kv_usize("static_GLOBAL_C_CLASS_ADDR", std::ptr::addr_of!(GLOBAL_C_CLASS_ADDR) as usize);
         truth_kv_usize("c_class_addr", c_class as usize);
+        record_live(c_class as usize, 4096);
     }
     let map = unsafe {
         mmap(std::ptr::null_mut(), 65536, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0)
     };
     if map != (usize::MAX as *mut c_void) {
         let _ = GLOBAL_MMAP_ADDR.set(map as usize);
+        truth_kv_usize("static_GLOBAL_MMAP_ADDR", std::ptr::addr_of!(GLOBAL_MMAP_ADDR) as usize);
         truth_kv_usize("mmap_addr", map as usize);
+        truth_kv_usize("mmap_size", 65536);
     }
 
     // -- wait for the owner thread's ground truth, persist, then park -----------
     while !TRUTH_THREAD_DONE.load(Ordering::SeqCst) {
         thread::sleep(Duration::from_millis(10));
     }
+    // Remaining static slots that the typed-root analyzer must resolve exactly.
+    truth_kv_usize("static_TRUTH", std::ptr::addr_of!(TRUTH) as usize);
+    truth_kv_usize("static_TRUTH_THREAD_DONE", std::ptr::addr_of!(TRUTH_THREAD_DONE) as usize);
     truth_kv_usize("pid", std::process::id() as usize);
     write_ground_truth();
 

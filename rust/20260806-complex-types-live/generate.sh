@@ -79,6 +79,22 @@ with open(binary, "rb") as stream:
     binary_sha256 = hashlib.sha256(stream.read()).hexdigest()
 binary_size = os.path.getsize(binary)
 
+# GNU Build ID from the ELF notes (readelf -n). This is the build identity the
+# typed-root analyzer later requires to match the core's executable exactly.
+build_id = ""
+try:
+    readelf_out = subprocess.run(
+        ["readelf", "-n", binary], capture_output=True, text=True, check=True
+    ).stdout
+    for line in readelf_out.splitlines():
+        if "Build ID" in line:
+            parts = line.split(":", 1)
+            if len(parts) == 2:
+                build_id = parts[1].strip()
+            break
+except subprocess.CalledProcessError:
+    pass
+
 # opt_level / debug_level from the [profile.dev] table of Cargo.toml.
 opt_level = "0"
 debug_level = "0"
@@ -106,6 +122,7 @@ manifest = {
     "allocator": allocator,
     "cargo_lock_sha256": cargo_lock_sha256,
     "executable": {
+        "build_id": build_id,
         "sha256": binary_sha256,
         "size": binary_size,
     },
@@ -166,5 +183,11 @@ mv "$tar" "$artifact"
 # Keep the locked build identity next to the fixture (like golang manifest.json)
 # so Go tests and validate.py can read it without unpacking the tar.
 cp "$manifest_json" "$case_dir/rust-artifacts.json"
+# The fixture writes ground truth to its cwd (the repo root during capture);
+# copy it next to the fixture so Phase 1/2 validators can reconcile against it.
+if [[ -f "$repo_root/rust-fixture-ground-truth.json" ]]; then
+    mv "$repo_root/rust-fixture-ground-truth.json" "$case_dir/rust-fixture-ground-truth.json"
+fi
 echo "[OK] $artifact"
 echo "[OK] $case_dir/rust-artifacts.json"
+echo "[OK] $case_dir/rust-fixture-ground-truth.json"
