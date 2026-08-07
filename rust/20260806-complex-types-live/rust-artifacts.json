@@ -1,0 +1,18 @@
+{
+  "allocator": "glibc-ptmalloc",
+  "cargo_lock_sha256": "a97e01ca357dc036c40b468aa5bd37c48a56e1fb9fc56114474f0d3193b097f7",
+  "cargo_profile": "dev",
+  "debug_level": "2",
+  "executable": {
+    "sha256": "e769df58d127abdb3c90e5bba1b1a55542b12a01b85c0cb6ff7fa061074dc7e8",
+    "size": 5836248
+  },
+  "host_triple": "x86_64-unknown-linux-gnu",
+  "llvm_version": "22.1.6",
+  "lto": "off",
+  "opt_level": "0",
+  "panic_strategy": "unwind",
+  "rustc_version": "1.97.1",
+  "schema": "maze.rust-artifacts/v1",
+  "target_triple": "x86_64-unknown-linux-gnu"
+}

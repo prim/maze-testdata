@@ -1,0 +1,15 @@
+[package]
+name = "maze-rust-fixture"
+version = "0.1.0"
+edition = "2021"
+# No third-party dependencies on purpose: the fixture must build from a single
+# locked toolchain without a crates.io mirror, and the Cargo.lock stays tiny so
+# its digest is a stable part of the capture manifest.
+
+[profile.dev]
+# debug = 2 -> full variable debuginfo, required by the Phase 0 DWARF fixture.
+debug = 2
+
+[profile.release]
+# release-with-DWARF variant, used by the optimized fixture boundary test.
+debug = true
