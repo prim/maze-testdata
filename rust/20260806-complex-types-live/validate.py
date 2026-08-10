@@ -480,7 +480,7 @@ def validate(data):
     print("=" * 60)
 
     summary = data.get("summary", {})
-    items = data.get("items", [])
+    items = data.get("items") or []
 
     passed = True
 
