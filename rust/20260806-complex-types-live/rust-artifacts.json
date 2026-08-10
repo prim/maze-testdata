@@ -1,19 +1,19 @@
 {
-  "allocator": "glibc-ptmalloc",
-  "cargo_lock_sha256": "a97e01ca357dc036c40b468aa5bd37c48a56e1fb9fc56114474f0d3193b097f7",
-  "cargo_profile": "dev",
-  "debug_level": "2",
-  "executable": {
-    "build_id": "e5c4aa17f32d51c0d5b3e9229c7ceff15c61b20f",
-    "sha256": "152118ecb22ab2b6011fcf0479961646edd33da91b136a204f9bb42a185c03bd",
-    "size": 5987136
-  },
-  "host_triple": "x86_64-unknown-linux-gnu",
-  "llvm_version": "22.1.6",
-  "lto": "off",
-  "opt_level": "0",
-  "panic_strategy": "unwind",
-  "rustc_version": "1.97.1",
   "schema": "maze.rust-artifacts/v1",
-  "target_triple": "x86_64-unknown-linux-gnu"
+  "rustc_version": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+  "host_triple": "x86_64-unknown-linux-gnu",
+  "target_triple": "x86_64-unknown-linux-gnu",
+  "llvm_version": "22.1.6",
+  "cargo_profile": "dev",
+  "opt_level": "0",
+  "debug_level": "2",
+  "lto": "off",
+  "panic_strategy": "unwind",
+  "allocator": "system",
+  "cargo_lock_sha256": "a97e01ca357dc036c40b468aa5bd37c48a56e1fb9fc56114474f0d3193b097f7",
+  "executable": {
+    "archive_member": "",
+    "sha256": "e1b039c42d418e6612a79fd975c2f330e2341486d242107f37894f7a148fc594",
+    "size": "6015144"
+  }
 }

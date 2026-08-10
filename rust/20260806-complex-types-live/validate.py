@@ -11,13 +11,18 @@ Phase 0 (capability):
   3. The prepare-stage Rust capability report is emitted with multi-evidence
      detection (DWARF CU language + v0 symbols + runtime symbols).
 
-Phase 1 (native baseline L0/L1 reconciliation, dev-log Phase 1 DoD):
-  4. The allocator walker's live accounting covers every byte the fixture
-     knows is still alive: malloced >= known_live_ptmalloc.
-  5. The ground truth is self-consistent: sum(live_allocations) ==
-     known_live_ptmalloc, and the ptmalloc pool total covers its used bytes.
-  6. Negative self-test: a result whose malloced < known_live_ptmalloc must
-     fail the reconciliation (the validator is not vacuously green).
+Phase 5 (FFI/raw-pointer + allocator/TLS/stack layering, dev-log Phase 5 DoD):
+  7. The FFI OnceLock<usize> statics publish primitive usize address clues, never
+     a typed owner of the malloc/mmap/future regions.
+  8. No rust typed edge claims the anonymous mmap region or the TLS backing as
+     its own allocation; the layers are reported separately, never summed.
+  9. The ground truth keeps the mmap allocation out of known_live_ptmalloc while
+     the malloc-backed c_class and the leaked TLS Box<Vec> backing stay in it.
+ 10. Negative self-test: each layering violation above must fail the validator.
+ 11. The static-root reachable Phase 5 typed-edge evidence survives to JSON:
+     dyn_trait (with a concrete_type), option, and raw_ptr kinds are present in
+     the published heap_edges tree (enum/async generators are stack/heap-only in
+     this fixture and are proven by Go tests, not the JSON contract).
 
 Run modes:
   python3 validate.py <maze-result.json>      # positive validation
@@ -139,6 +144,158 @@ def reconcile(data, ground_truth):
     return True, lines
 
 
+def validate_layering(data, ground_truth):
+    """Phase 5 FFI/raw-pointer + allocator/TLS/stack layering.
+
+    The Rust typed-edge layer and the allocator layers are reported separately
+    and never summed: the FFI OnceLock<usize> statics (GLOBAL_C_CLASS_ADDR /
+    GLOBAL_MMAP_ADDR / GLOBAL_FUTURE_ADDR) publish primitive usize address clues
+    -- never a typed owner of the malloc/mmap/future regions; no rust edge
+    claims the anonymous mmap region or the TLS backing; and the ground truth
+    keeps the mmap allocation out of known_live_ptmalloc while the malloc-backed
+    c_class and the leaked TLS Box<Vec> backing stay in it (raw pointers inside
+    Rust values publish their target address as a clue; the range of that target
+    is discovered by whichever layer holds it, never summed into the Rust
+    typed-owner set).
+    """
+    lines = []
+    rust = data.get("rust")
+    if not isinstance(rust, dict):
+        lines.append("✗ no rust block in the result (Rust fixture must publish typed edges)")
+        return False, lines
+    edges = rust.get("heap_edges")
+    if not isinstance(edges, list) or not edges:
+        lines.append("✗ rust.heap_edges absent; cannot verify the typed-edge layering")
+        return False, lines
+
+    # The FFI address statics are primitive usize clues, never typed owners.
+    by_root = {e.get("root"): e for e in edges}
+    for name in ("GLOBAL_C_CLASS_ADDR", "GLOBAL_MMAP_ADDR", "GLOBAL_FUTURE_ADDR"):
+        e = by_root.get(name)
+        if e is None:
+            lines.append("✗ no rust edge for %s (walk dropped the FFI address static)" % name)
+            return False, lines
+        if e.get("kind") != "primitive" or e.get("type_name") != "usize":
+            lines.append(
+                "✗ %s edge = kind %r type %r, want primitive usize (address clue only, no typed owner)"
+                % (name, e.get("kind"), e.get("type_name"))
+            )
+            return False, lines
+        if e.get("owned_unique"):
+            lines.append("✗ %s must not own an allocation" % name)
+            return False, lines
+    lines.append("✓ FFI address statics publish primitive usize clues (no typed owner)")
+
+    mmap_addr = int(ground_truth["mmap_addr"], 16)
+    mmap_size = int(ground_truth["mmap_size"], 16)
+    tls_buffer = int(ground_truth["tls_buffer_ptr"], 16)
+
+    # No rust edge may claim the mmap region or the TLS backing as its own.
+    def scan(edge_list):
+        for e in edge_list:
+            a, p = e.get("addr", 0), e.get("ptr", 0)
+            if mmap_addr <= p < mmap_addr + mmap_size or mmap_addr <= a < mmap_addr + mmap_size:
+                return "edge %r kind %r addr %#x ptr %#x falls inside the mmap region" % (
+                    e.get("root"), e.get("kind"), a, p)
+            if a == tls_buffer or p == tls_buffer:
+                return "edge %r kind %r claims the TLS backing %#x" % (e.get("root"), e.get("kind"), tls_buffer)
+            bad = scan(e.get("children") or [])
+            if bad:
+                return bad
+        return None
+
+    bad = scan(edges)
+    if bad:
+        lines.append("✗ %s (layering violated: the region belongs to its own layer)" % bad)
+        return False, lines
+    lines.append("✓ no rust typed edge claims the mmap region (%#x-%#x) or the TLS backing %#x"
+                 % (mmap_addr, mmap_addr + mmap_size, tls_buffer))
+
+    # Ground-truth layering: mmap stays out of the ptmalloc known-live set while
+    # the malloc-backed c_class and the leaked TLS Box<Vec> backing stay in it.
+    live = ground_truth.get("live_allocations", [])
+
+    def in_live(addr):
+        for entry in live:
+            try:
+                a, _ = entry.split(":", 1)
+            except ValueError:
+                continue
+            if int(a, 16) == addr:
+                return True
+        return False
+
+    if in_live(mmap_addr):
+        lines.append("✗ ground truth includes the mmap address %#x in ptmalloc known-live (double counted)" % mmap_addr)
+        return False, lines
+    lines.append("✓ mmap %#x is outside known_live_ptmalloc (separate layer, not double counted)" % mmap_addr)
+    if not in_live(int(ground_truth["c_class_addr"], 16)):
+        lines.append("✗ c_class malloc region missing from known_live_ptmalloc")
+        return False, lines
+    if not in_live(tls_buffer):
+        lines.append("✗ TLS Box<Vec> backing missing from known_live_ptmalloc")
+        return False, lines
+    lines.append("✓ c_class malloc region and the leaked TLS backing stay in known_live_ptmalloc")
+    return True, lines
+
+
+def validate_phase5_edges(data):
+    """Phase 5 typed-edge evidence that must survive to JSON.
+
+    The static-root reachable Phase 5 parsers publish their kinds into the
+    heap_edges tree: the GLOBAL_SPEAKERS statics' Box<dyn Speaker> children are
+    dyn_trait edges with a concrete_type (vtable-to-impl association, never a
+    guess), the GLOBAL_ARC_NODE shared owner walks Option<Arc>/Option<Weak>
+    children as option edges, and the trait vtable statics publish their *const ()
+    method slots as raw_ptr address clues. A publish regression that drops any
+    of these from the JSON must fail the validator.
+
+    The enum/async generators are deliberately absent here: the stack Result and
+    Event live on a thread's stack and the leaked async future is reachable only
+    through GLOBAL_FUTURE_ADDR's usize value, which production typed roots
+    (static storage) never follow into a typed owner — that would be fabricating
+    retained proof. Their parsers are proven by Go fixture tests against the
+    committed core with explicit roots, not by the JSON contract.
+    """
+    lines = []
+    rust = data.get("rust")
+    if not isinstance(rust, dict):
+        lines.append("✗ no rust block in the result (cannot verify Phase 5 typed edges)")
+        return False, lines
+    edges = rust.get("heap_edges")
+    if not isinstance(edges, list) or not edges:
+        lines.append("✗ rust.heap_edges absent; cannot verify Phase 5 typed edges")
+        return False, lines
+
+    kinds = {}
+    dyn_concrete = set()
+
+    def walk(es):
+        for e in es:
+            kinds[e.get("kind")] = kinds.get(e.get("kind"), 0) + 1
+            if e.get("kind") == "dyn_trait" and e.get("concrete_type"):
+                dyn_concrete.add(e.get("concrete_type"))
+            walk(e.get("children") or [])
+
+    walk(edges)
+    for name in ("dyn_trait", "option", "raw_ptr"):
+        if kinds.get(name, 0) < 1:
+            lines.append(
+                "✗ no %s edge published from static roots (Phase 5 parser lost in publish)"
+                % name
+            )
+            return False, lines
+    if not dyn_concrete:
+        lines.append("✗ dyn_trait edges carry no concrete_type (vtable-to-impl association missing)")
+        return False, lines
+    lines.append(
+        "✓ static-root reachable Phase 5 edges survive to JSON: dyn_trait=%d (concrete: %s), option=%d, raw_ptr=%d"
+        % (kinds.get("dyn_trait", 0), ", ".join(sorted(dyn_concrete)[:2]),
+           kinds.get("option", 0), kinds.get("raw_ptr", 0))
+    )
+    return True, lines
+
+
 def negative_self_test():
     """Negative cases: the reconciliation must not be vacuously green.
 
@@ -185,9 +342,137 @@ def negative_self_test():
         print("✓ [neg-3] pool total < malloced rejected: %s" % lines[-1])
 
     print()
+    print("=" * 60)
+    print("Phase 5 layering negative self-test")
+    print("=" * 60)
+
+    def base_layering():
+        # Primitive usize edges publish no ptr field: the static's address is the
+        # edge addr, its OnceLock value is a scalar, not a pointer clue. Only the
+        # mmap region's own base appears nowhere (the region belongs to its layer).
+        return {"rust": {"heap_edges": [
+            {"root": "GLOBAL_C_CLASS_ADDR", "kind": "primitive", "type_name": "usize",
+             "addr": 0x55f70bf5c748},
+            {"root": "GLOBAL_MMAP_ADDR", "kind": "primitive", "type_name": "usize",
+             "addr": 0x55f70bf5c700},
+            {"root": "GLOBAL_FUTURE_ADDR", "kind": "primitive", "type_name": "usize",
+             "addr": 0x55f70bf5c738},
+        ]}}
+
+    def gt_copy():
+        import copy
+        return copy.deepcopy(ground_truth)
+
+    # 4. missing rust block must fail.
+    ok, lines = validate_layering({}, ground_truth)
+    if ok:
+        print("✗ [neg-4] missing rust block was accepted")
+        failed = True
+    else:
+        print("✓ [neg-4] missing rust block rejected: %s" % lines[0])
+
+    # 5. a fixture FFI static promoted to a typed owner must fail.
+    data = base_layering()
+    data["rust"]["heap_edges"][0]["kind"] = "struct"
+    data["rust"]["heap_edges"][0]["owned_unique"] = True
+    ok, lines = validate_layering(data, ground_truth)
+    if ok:
+        print("✗ [neg-5] FFI static promoted to a typed owner was accepted")
+        failed = True
+    else:
+        print("✓ [neg-5] FFI static typed-owner promotion rejected: %s" % lines[-1])
+
+    # 6. a rust edge claiming the mmap region must fail (double counting).
+    data = base_layering()
+    data["rust"]["heap_edges"].append({"root": "bad", "kind": "box", "type_name": "T",
+                                       "addr": 0x55f70bf5c7f0, "ptr": int(ground_truth["mmap_addr"], 16) + 0x100})
+    ok, lines = validate_layering(data, ground_truth)
+    if ok:
+        print("✗ [neg-6] rust edge claiming the mmap region was accepted")
+        failed = True
+    else:
+        print("✓ [neg-6] rust edge claiming mmap rejected: %s" % lines[-1])
+
+    # 7. a rust edge claiming the TLS backing must fail.
+    data = base_layering()
+    data["rust"]["heap_edges"].append({"root": "bad", "kind": "box", "type_name": "T",
+                                       "addr": int(ground_truth["tls_buffer_ptr"], 16)})
+    ok, lines = validate_layering(data, ground_truth)
+    if ok:
+        print("✗ [neg-7] rust edge claiming the TLS backing was accepted")
+        failed = True
+    else:
+        print("✓ [neg-7] rust edge claiming TLS backing rejected: %s" % lines[-1])
+
+    # 8. ground truth double-counting the mmap allocation must fail.
+    gt = gt_copy()
+    gt["live_allocations"].append("%s:0x100" % gt["mmap_addr"])
+    ok, lines = validate_layering(base_layering(), gt)
+    if ok:
+        print("✗ [neg-8] ground truth with mmap in known_live was accepted")
+        failed = True
+    else:
+        print("✓ [neg-8] mmap in known_live rejected: %s" % lines[-1])
+
+    # 9. ground truth dropping the c_class malloc region must fail.
+    gt = gt_copy()
+    gt["live_allocations"] = [e for e in gt["live_allocations"] if not e.startswith(gt["c_class_addr"])]
+    ok, lines = validate_layering(base_layering(), gt)
+    if ok:
+        print("✗ [neg-9] ground truth missing c_class malloc region was accepted")
+        failed = True
+    else:
+        print("✓ [neg-9] c_class missing from known_live rejected: %s" % lines[-1])
+
+    # 10. ground truth dropping the TLS backing must fail.
+    gt = gt_copy()
+    gt["live_allocations"] = [e for e in gt["live_allocations"] if not e.startswith(gt["tls_buffer_ptr"])]
+    ok, lines = validate_layering(base_layering(), gt)
+    if ok:
+        print("✗ [neg-10] ground truth missing the TLS backing was accepted")
+        failed = True
+    else:
+        print("✓ [neg-10] TLS backing missing from known_live rejected: %s" % lines[-1])
+
+    # 11-13. Phase 5 typed-edge evidence lost in publish must fail.
+    def base_phase5():
+        return {"rust": {"heap_edges": [
+            {"root": "GLOBAL_SPEAKERS", "kind": "vec", "type_name": "Vec<Box<dyn Speaker>>", "children": [
+                {"root": "", "kind": "dyn_trait", "type_name": "Box<dyn Speaker>",
+                 "concrete_type": "maze_rust_fixture::Dog"},
+                {"root": "", "kind": "dyn_trait", "type_name": "Box<dyn Speaker>",
+                 "concrete_type": "maze_rust_fixture::Cat"},
+            ]},
+            {"root": "GLOBAL_ARC_NODE", "kind": "arc", "type_name": "Arc<Node>", "children": [
+                {"root": "", "kind": "option", "type_name": "Option<Arc<Node>>"},
+            ]},
+            {"root": "<Dog as Speaker>::{vtable}", "kind": "struct", "children": [
+                {"root": "", "kind": "raw_ptr", "type_name": "*const ()"},
+            ]},
+        ]}}
+
+    def drop_kind(base, kind):
+        out = []
+        for e in base["rust"]["heap_edges"]:
+            ne = dict(e)
+            if ne["kind"] == kind:
+                continue
+            ne["children"] = [c for c in ne.get("children", []) if c["kind"] != kind]
+            out.append(ne)
+        return {"rust": {"heap_edges": out}}
+
+    for idx, kind in (("neg-11", "dyn_trait"), ("neg-12", "option"), ("neg-13", "raw_ptr")):
+        data = drop_kind(base_phase5(), kind)
+        ok, lines = validate_phase5_edges(data)
+        if ok:
+            print("✗ [%s] %s edges lost in publish were accepted" % (idx, kind))
+            failed = True
+        else:
+            print("✓ [%s] missing %s edges rejected: %s" % (idx, kind, lines[-1]))
+
+    print()
     print("TC-R001 negative self-test %s" % ("FAILED" if failed else "PASSED"))
     return not failed
-
 
 def validate(data):
     print("=" * 60)
@@ -278,6 +563,24 @@ def validate(data):
         return False
     print("reconciling against %s" % path)
     ok, lines = reconcile(data, ground_truth)
+    for line in lines:
+        print("  %s" % line)
+    if not ok:
+        passed = False
+
+    # Phase 5: FFI/raw-pointer + allocator/TLS/stack layering.
+    print()
+    print("Phase 5 layering (FFI address clues, no double counting)")
+    ok, lines = validate_layering(data, ground_truth)
+    for line in lines:
+        print("  %s" % line)
+    if not ok:
+        passed = False
+
+    # Phase 5: static-root reachable typed-edge evidence survives to JSON.
+    print()
+    print("Phase 5 typed-edge evidence (dyn_trait/option/raw_ptr publish)")
+    ok, lines = validate_phase5_edges(data)
     for line in lines:
         print("  %s" % line)
     if not ok:

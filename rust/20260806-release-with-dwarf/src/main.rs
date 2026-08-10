@@ -213,7 +213,10 @@ fn write_ground_truth() {
 }
 
 fn main() {
-    truth_kv("fixture".to_string().as_str(), "20260806-complex-types-live".to_string());
+    truth_kv(
+        "fixture".to_string().as_str(),
+        "20260806-release-with-dwarf".to_string(),
+    );
 
     // -- global cache: HashMap<String, Box<Person>> --------------------------
     let cache = GLOBAL_CACHE.get_or_init(|| {
