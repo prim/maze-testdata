@@ -14,10 +14,16 @@
 - phmap、fix-props vector、shared_ptr control block 深层 ownership。
 - 真实 `space_wrapper -> area -> entity -> area_impl.props_` 在线 ownership 链。
 - `area_map` 固定 scalar、嵌套 map、typed list 和 generic map 经 `entity.mimpl_` 读取。
+- 参考 Python `20260129-complex-types-311` 的 complex matrix：空/单元素/混合/大容器、三层嵌套、
+  custom-class typed map/list、typed list matrix、七节点树以及短/长/Unicode string。
+- 160 项 phmap/vector 增长、已有 key 覆盖、map `pop` 删除和 list `remove` 删除后的最终状态。
+- 参考 y2-server Property 定义的 Obj/Dict/List 3x3 嵌套矩阵、装备/阵容业务结构、基础类型列表、
+  extension map、nested object/typed-list 元素替换，以及显式扁平化的继承 schema。
 
 fixture 创建 96 个 player entity、64 个 NPC entity、16 个挂入 area/world 的 online entity，以及
-对应的 property tree。Lua 全局 `MESSIAH_FIXTURE` 保持 entity、area、props、space 和 holder 的强引用，
-直到 `maze-gen-coredump.py` 完成抓取。
+12 个 complex entity、12 个 y2 matrix entity 和对应 property tree。Lua 全局 `MESSIAH_FIXTURE` 保持
+entity、area、props、space、schema holder 和替换前 detached object 的强引用，直到
+`maze-gen-coredump.py` 完成抓取。
 
 ## 直接执行
 
@@ -30,7 +36,8 @@ python3 testdata/run_test.py lua/20260731-messiah-bookworm
 
 runner 会依次执行 Maze tar workflow、生成 `maze-result.json`、加载 `validate.py`。validator 检查：
 
-- entity 和主要 property path 的精确数量；
+- entity 和 75 个主要 property path 的精确数量与 `total_size`；
+- 每个预期分类只有一个结果项，拒绝同名 type 静默覆盖；
 - 6 种 Messiah native binding 的精确数量；
 - `shallow_fallback=0`；
 - `Unknown=0B`；
@@ -71,6 +78,47 @@ class_ready(Inventory)
 
 `fixture.lua` 中的 `verify_list_property_boundary()` 还会在输出 `READY FOR GCORE` 前验证 list 上伪造的
 `label/count` 默认值仍为 `nil`，且不进入 `debug_get_prop_types()`。
+
+### Complex property matrix
+
+`FixtureComplexProperties` 对应 Python complex-types 中的对象和容器组合，而不是照搬 Python
+运行时类型。每个 complex root 包含：
+
+| Python complex-types 语义 | Messiah fixture |
+|---|---|
+| 空、单元素、混合 list/dict | `empty_*`、`single_*`、`mixed_*` |
+| 大 list/dict | 各 160 项的 `growth_list` / `growth_map` |
+| nested list/dict | `nested_lists` 与三层 `nested_map` |
+| class instance / tree | `FixtureComplexLeaf` 与七节点 `FixtureComplexTree*` |
+| typed collection | `FixtureComplexLeafList`、`FixtureComplexLeafMap`、`FixtureComplexListMatrix` |
+| short/long/Unicode string | `short_text`、1024 字节 `long_text`、`unicode_text` |
+| mutation | map 覆盖/`pop`，list `remove` |
+
+H72 schema index 实测拒绝 `VALUE_TYPE="bool"` 的 map/list nested property，错误为
+`VALUE_TYPE should be custom type/None`。因此 fixture 通过 `CustomMapType` / `CustomListType` 保存 bool，
+不伪造运行时不支持的 typed bool schema。custom-class typed map 的元素不能同时挂到多个 key；
+每个 `FixtureComplexLeafMap` 元素都是独立实例。
+
+### Y2 property matrix
+
+`FixtureY2Properties` 把 `dev-log/2026-08-11-y2-server-property-usage.md` 中可迁移的 schema 拓扑映射到
+H72，不把 y2 的 DB/CLIENT flag、MongoDB oplog 或 Python 自动类型转换硬套到 Messiah：
+
+| y2 定义 | H72 fixture | 覆盖点 |
+|---|---|---|
+| `PropObj` fixed fields | `FixtureY2Stat` / `FixtureY2ObjNest` | scalar default、Obj -> Obj/Dict/List |
+| typed `PropDict` | `FixtureY2*Dict` | Dict -> Obj/Dict/List、int key/value |
+| typed `PropList` | `FixtureY2*List` | List -> Obj/Dict/List、单元素替换 |
+| `EquipDict` | `FixtureY2EquipDict` | 每 root 4 个带 nested attributes 的装备 |
+| `FormationDict` | `FixtureY2FormationDict` | 每 root 3 套阵容、每套 4 个成员和 history list |
+| `PropList` simple value | `reviewed_sections` | 每 root 10 个 int |
+| 无约束 `PropDict` | `extensions` | scalar 与 nested generic map |
+| `PropObj` 继承 | `FixtureY2DerivedRecord` | 显式合并 base/derived fields，typed list 保存 |
+
+生产 H72 runtime 探针确认整个 nested object 和 typed list 单元素都能替换。替换前对象保留在
+`MESSIAH_FIXTURE.y2_detached`，使离线分析同时覆盖 detached ownership。另一个 ABI 边界是：只有整数
+fixed fields 的 nested `area_map` 读取会异常返回整个 map；schema 增加字符串字段后读取恢复，因此
+`FixtureY2Stat` 保留 `label` 字段，测试实际可工作的生产契约而非伪造预期行为。
 
 ## 在线 ownership 脚本
 
@@ -143,6 +191,16 @@ python3 testdata/lua/20260731-messiah-bookworm/generate_fixture.py
 
 新文件生成到 `./tmp/h72-messiah-generated/`，不会直接覆盖已提交 fixture。
 
+只执行生产 Lua/property API 断言、不生成 core：
+
+```bash
+python3 testdata/lua/20260731-messiah-bookworm/generate_fixture.py \
+  --skip-image-build --smoke
+```
+
+该入口仍恢复并校验真实 H72 runtime，并在固定 Bookworm 容器中执行完整 `fixture.lua`；
+`FIXTURE SMOKE PASS` 之前的任意 schema 或状态断言失败都会返回非零。
+
 ### 从原始 H72 job 首次构造
 
 先按 Maze UUID workflow 下载 job，使 `27020.md5` 和 ELF cache 可用，再执行：
@@ -167,13 +225,13 @@ python3 testdata/lua/20260731-messiah-bookworm/generate_fixture.py \
 当前提交 fixture：
 
 ```text
-file:   coredump-59-1785543643.tar.gz
-size:   226,741,195 bytes
-sha256: d80ac1641c35196c93d4c5dcbc7c24c94e83e02ba326edae81e0859c43ad48bf
+file:   coredump-8-1786448621.tar.gz
+size:   227,029,292 bytes
+sha256: a6b9b7a33d2b82fa2f5a1bb80e65f5577f58b31735c01c74a704a425b5553a21
 ```
 
-其正式基线为 `area=16`、`area_map=1850`、`area_list=1374`、
-`area_prop_index_obj=7`、`entity=176`、`space_wrapper=1`，共 `3424` 个 Messiah native
+其正式基线为 `area=16`、`area_map=3229`、`area_list=1977`、
+`area_prop_index_obj=20`、`entity=200`、`space_wrapper=1`，共 `5443` 个 Messiah native
 bindings。在线 schema 的 class/default 对象使 `FixtureOnlineNested` 和 `FixtureOnlineNumbers`
 各为 17 个：1 个 schema 实例加 16 个在线对象实例。
 

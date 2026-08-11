@@ -31,6 +31,11 @@ def main():
     parser.add_argument("--elf-dir", type=Path, default=maze_root / "db" / "elf")
     parser.add_argument("--skip-image-build", action="store_true")
     parser.add_argument(
+        "--smoke",
+        action="store_true",
+        help="run fixture assertions in the pinned runtime without generating a core",
+    )
+    parser.add_argument(
         "--output",
         type=Path,
         default=maze_root / "tmp" / "h72-messiah-generated",
@@ -81,6 +86,30 @@ def main():
             test_dir_in + "/fixture.lua",
         ]
     )
+
+    if args.smoke:
+        smoke_command = [
+            "docker",
+            "run",
+            "--rm",
+            "--user=%d:%d" % (os.getuid(), os.getgid()),
+            "--env=HOME=" + container_path(maze_root, home_dir),
+            "--env=MESSIAH_FIXTURE_SMOKE=1",
+            "--volume=%s:/workspace" % maze_root.resolve(),
+            "--workdir=/workspace",
+            IMAGE,
+            "python3",
+            test_dir_in + "/exec_fixture.py",
+            "--runtime",
+            runtime_in,
+            "--lua",
+            runtime_in + "/lua",
+            "--script",
+            test_dir_in + "/fixture.lua",
+        ]
+        subprocess.run(smoke_command, cwd=str(maze_root), check=True)
+        print("Fixture smoke test passed")
+        return
 
     docker_command = [
         "docker",

@@ -10,42 +10,93 @@ import sys
 
 
 EXPECTED_ITEMS = {
-    "<FixturePlayerEntity instance> [Messiah async::logic::entity]": 96,
-    "<FixtureNpcEntity instance> [Messiah async::logic::entity]": 64,
-    "<FixtureOnlineEntity instance> [Messiah async::logic::entity]": 16,
-    "<FixtureOnlineArea instance> [Messiah async::logic::area]": 16,
-    "<FixtureWorldSpace instance> [Messiah async::logic::space_wrapper]": 1,
-    "<FixturePlayerProperties instance> [Messiah async::logic::area_map]": 96,
-    "<FixtureNpcProperties instance> [Messiah async::logic::area_map]": 64,
-    "<FixtureOnlineProperties instance> [Messiah async::logic::area_map]": 16,
-    "<FixtureOnlineNested instance> [Messiah async::logic::area_map]": 17,
-    "<FixtureOnlineNumbers instance> [Messiah async::logic::area_list]": 17,
-    "<CustomMapType .metadata instance> [Messiah async::logic::area_map]": 16,
-    "<CustomMapType .state instance> [Messiah async::logic::area_map]": 96,
-    "<CustomListType .events instance> [Messiah async::logic::area_list]": 96,
-    "<CustomMapType .stats.labels instance> [Messiah async::logic::area_map]": 160,
-    "<CustomListType .stats.history instance> [Messiah async::logic::area_list]": 160,
-    "<CustomMapType .inventory.%d.attributes instance> [Messiah async::logic::area_map]": 192,
-    "<CustomMapType .loot.%d.attributes instance> [Messiah async::logic::area_map]": 64,
-    "<CustomFloatListType .position instance> [Messiah async::logic::area_list]": 96,
-    "<CustomFloatListType .patrol instance> [Messiah async::logic::area_list]": 64,
-    "<CustomMapType .blackboard instance> [Messiah async::logic::area_map]": 64,
-    "<CustomListType .decisions instance> [Messiah async::logic::area_list]": 64,
-    "<ProbeListPropertyRoot instance> [Messiah async::logic::area_map]": 1,
-    "<ProbeListWithProps instance> [Messiah async::logic::area_list]": 2,
-    "<area_prop_index instance> [Messiah async::logic::area_prop_index_obj]": 7,
+    "<FixturePlayerEntity instance> [Messiah async::logic::entity]": (96, 15360),
+    "<FixtureNpcEntity instance> [Messiah async::logic::entity]": (64, 10240),
+    "<FixtureOnlineEntity instance> [Messiah async::logic::entity]": (16, 2560),
+    "<FixtureComplexEntity instance> [Messiah async::logic::entity]": (12, 1920),
+    "<FixtureOnlineArea instance> [Messiah async::logic::area]": (16, 68096),
+    "<FixtureWorldSpace instance> [Messiah async::logic::space_wrapper]": (1, 128),
+    "<FixturePlayerProperties instance> [Messiah async::logic::area_map]": (96, 67584),
+    "<FixtureNpcProperties instance> [Messiah async::logic::area_map]": (64, 43008),
+    "<FixtureOnlineProperties instance> [Messiah async::logic::area_map]": (16, 10752),
+    "<FixtureOnlineNested instance> [Messiah async::logic::area_map]": (17, 7616),
+    "<FixtureOnlineNumbers instance> [Messiah async::logic::area_list]": (17, 5680),
+    "<FixtureComplexProperties instance> [Messiah async::logic::area_map]": (12, 10752),
+    "<FixtureComplexLeaf instance> [Messiah async::logic::area_map]": (288, 175104),
+    "<FixtureComplexLeafList instance> [Messiah async::logic::area_list]": (13, 5488),
+    "<FixtureComplexLeafMap instance> [Messiah async::logic::area_map]": (13, 15424),
+    "<FixtureComplexListMatrix instance> [Messiah async::logic::area_list]": (13, 4720),
+    "<FixtureComplexTreeRoot instance> [Messiah async::logic::area_map]": (13, 7488),
+    "<FixtureComplexTreeBranch instance> [Messiah async::logic::area_map]": (26, 14976),
+    "<FixtureComplexTreeLeaf instance> [Messiah async::logic::area_map]": (50, 27200),
+    "<FixtureY2Entity instance> [Messiah async::logic::entity]": (12, 1920),
+    "<FixtureY2Properties instance> [Messiah async::logic::area_map]": (12, 9984),
+    "<FixtureY2Stat instance> [Messiah async::logic::area_map]": (61, 34160),
+    "<FixtureY2ObjNest instance> [Messiah async::logic::area_map]": (25, 14000),
+    "<FixtureY2IntMap instance> [Messiah async::logic::area_map]": (49, 21952),
+    "<FixtureY2IntList instance> [Messiah async::logic::area_list]": (99, 35472),
+    "<FixtureY2ObjDict instance> [Messiah async::logic::area_map]": (13, 5824),
+    "<FixtureY2DictDict instance> [Messiah async::logic::area_map]": (13, 5824),
+    "<FixtureY2ListDict instance> [Messiah async::logic::area_map]": (13, 5824),
+    "<FixtureY2ObjList instance> [Messiah async::logic::area_list]": (13, 4144),
+    "<FixtureY2DictList instance> [Messiah async::logic::area_list]": (13, 4144),
+    "<FixtureY2ListList instance> [Messiah async::logic::area_list]": (13, 4144),
+    "<FixtureY2Equip instance> [Messiah async::logic::area_map]": (48, 28416),
+    "<FixtureY2EquipDict instance> [Messiah async::logic::area_map]": (13, 6976),
+    "<FixtureY2FormationItem instance> [Messiah async::logic::area_map]": (144, 85248),
+    "<FixtureY2Formation instance> [Messiah async::logic::area_map]": (37, 20032),
+    "<FixtureY2FormationInfo instance> [Messiah async::logic::area_map]": (36, 20160),
+    "<FixtureY2FormationDict instance> [Messiah async::logic::area_map]": (13, 5824),
+    "<FixtureY2DerivedRecord instance> [Messiah async::logic::area_map]": (36, 21312),
+    "<FixtureY2DerivedRecordList instance> [Messiah async::logic::area_list]": (13, 4720),
+    "<CustomMapType .metadata instance> [Messiah async::logic::area_map]": (16, 7168),
+    "<CustomMapType .state instance> [Messiah async::logic::area_map]": (96, 43008),
+    "<CustomListType .events instance> [Messiah async::logic::area_list]": (96, 32256),
+    "<CustomMapType .stats.labels instance> [Messiah async::logic::area_map]": (160, 71680),
+    "<CustomListType .stats.history instance> [Messiah async::logic::area_list]": (160, 53760),
+    "<CustomMapType .inventory.%d.attributes instance> [Messiah async::logic::area_map]": (192, 86016),
+    "<CustomMapType .loot.%d.attributes instance> [Messiah async::logic::area_map]": (64, 28672),
+    "<CustomMapType .equips.equip-1.attributes instance> [Messiah async::logic::area_map]": (12, 5376),
+    "<CustomMapType .equips.equip-2.attributes instance> [Messiah async::logic::area_map]": (12, 5376),
+    "<CustomMapType .equips.equip-3.attributes instance> [Messiah async::logic::area_map]": (12, 5376),
+    "<CustomMapType .equips.equip-4.attributes instance> [Messiah async::logic::area_map]": (12, 5376),
+    "<CustomMapType .extensions instance> [Messiah async::logic::area_map]": (12, 5376),
+    "<CustomMapType .extensions.audit instance> [Messiah async::logic::area_map]": (12, 5376),
+    "<CustomFloatListType .position instance> [Messiah async::logic::area_list]": (96, 35328),
+    "<CustomFloatListType .patrol instance> [Messiah async::logic::area_list]": (64, 21504),
+    "<CustomMapType .blackboard instance> [Messiah async::logic::area_map]": (64, 28672),
+    "<CustomListType .decisions instance> [Messiah async::logic::area_list]": (64, 21504),
+    "<CustomMapType .empty_map instance> [Messiah async::logic::area_map]": (12, 5376),
+    "<CustomMapType .single_map instance> [Messiah async::logic::area_map]": (12, 5376),
+    "<CustomMapType .mixed_map instance> [Messiah async::logic::area_map]": (12, 6528),
+    "<CustomMapType .nested_map instance> [Messiah async::logic::area_map]": (12, 5376),
+    "<CustomMapType .nested_map.level1 instance> [Messiah async::logic::area_map]": (12, 5376),
+    "<CustomMapType .nested_map.level1.level2 instance> [Messiah async::logic::area_map]": (12, 5376),
+    "<CustomMapType .nested_map.level1.level2.level3 instance> [Messiah async::logic::area_map]": (12, 5376),
+    "<CustomMapType .growth_map instance> [Messiah async::logic::area_map]": (12, 90240),
+    "<CustomListType .empty_list instance> [Messiah async::logic::area_list]": (12, 3648),
+    "<CustomListType .single_list instance> [Messiah async::logic::area_list]": (12, 3840),
+    "<CustomListType .mixed_list instance> [Messiah async::logic::area_list]": (12, 4416),
+    "<CustomListType .nested_lists instance> [Messiah async::logic::area_list]": (12, 4416),
+    "<CustomListType .nested_lists.%d instance> [Messiah async::logic::area_list]": (36, 13248),
+    "<CustomListType .growth_list instance> [Messiah async::logic::area_list]": (12, 52800),
+    "<CustomMapType .leaves.%d.metadata instance> [Messiah async::logic::area_map]": (96, 43008),
+    "<CustomMapType .leaf_lookup.map-leaf-16.metadata instance> [Messiah async::logic::area_map]": (12, 5376),
+    "<ProbeListPropertyRoot instance> [Messiah async::logic::area_map]": (1, 528),
+    "<ProbeListWithProps instance> [Messiah async::logic::area_list]": (2, 624),
+    "<area_prop_index instance> [Messiah async::logic::area_prop_index_obj]": (20, 4160),
 }
 
 # Updated after generating the committed fixture from fixture.lua.
 EXPECTED_BINDINGS = {
     "async::logic::area": 16,
-    "async::logic::area_list": 1374,
-    "async::logic::area_map": 1850,
-    "async::logic::area_prop_index_obj": 7,
-    "async::logic::entity": 176,
+    "async::logic::area_list": 1977,
+    "async::logic::area_map": 3229,
+    "async::logic::area_prop_index_obj": 20,
+    "async::logic::entity": 200,
     "async::logic::space_wrapper": 1,
 }
-EXPECTED_TOTAL_BINDINGS = 3424
+EXPECTED_TOTAL_BINDINGS = 5443
 
 
 def read_required_file(env_name):
@@ -57,7 +108,10 @@ def read_required_file(env_name):
 
 
 def item_by_type(items):
-    return {item.get("type", ""): item for item in items}
+    indexed = {}
+    for item in items:
+        indexed.setdefault(item.get("type", ""), []).append(item)
+    return indexed
 
 
 def validate(data):
@@ -71,15 +125,23 @@ def validate(data):
     assert summary.get("unknown") == 0, "Unknown bytes: %r" % summary.get("unknown")
 
     indexed = item_by_type(items)
-    for name, expected_amount in sorted(EXPECTED_ITEMS.items()):
-        item = indexed.get(name)
-        assert item is not None, "missing result item: %s" % name
+    for name, expected in sorted(EXPECTED_ITEMS.items()):
+        matches = indexed.get(name, [])
+        assert matches, "missing result item: %s" % name
+        assert len(matches) == 1, "duplicate result items for %s: %d" % (name, len(matches))
+        item = matches[0]
+        expected_amount, expected_size = expected
         assert item.get("amount") == expected_amount, "%s amount=%r expected=%d" % (
             name,
             item.get("amount"),
             expected_amount,
         )
-        print("PASS %4d %s" % (expected_amount, name))
+        assert item.get("total_size") == expected_size, "%s total_size=%r expected=%d" % (
+            name,
+            item.get("total_size"),
+            expected_size,
+        )
+        print("PASS %4d %8dB %s" % (expected_amount, expected_size, name))
 
     for item in items:
         name = item.get("type", "")
