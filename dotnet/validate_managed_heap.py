@@ -61,7 +61,7 @@ def validate_case(
     assert dotnet.get("capture_backend") == "createdump-full", dotnet
     assert dotnet.get("publish_kind") == expected_publish_kind, dotnet
     assert bool(dotnet.get("ready_to_run")) is expect_ready_to_run, dotnet
-    assert dotnet.get("helper_version") == "maze-clr/1.28", dotnet
+    assert dotnet.get("helper_version") == "maze-clr/1.29", dotnet
     assert dotnet.get("helper_elapsed_millis", 0) > 0, dotnet
     assert dotnet.get("helper_peak_rss_bytes", 0) > 0, dotnet
     assert dotnet.get("import_elapsed_millis", 0) > 0, dotnet

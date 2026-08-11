@@ -178,7 +178,15 @@ def extract_log_paths_from_output(output, maze_root):
 
     for line in output.splitlines():
         line = line.strip()
-        if line.startswith("log file "):
+        if line.startswith("Maze log file:"):
+            candidate = line[len("Maze log file:") :].strip()
+            if candidate:
+                maze_log_path = os.path.abspath(os.path.join(maze_root, candidate))
+        elif line.startswith("Maze py log file:"):
+            candidate = line[len("Maze py log file:") :].strip()
+            if candidate:
+                maze_py_log_path = os.path.abspath(os.path.join(maze_root, candidate))
+        elif line.startswith("log file "):
             candidate = line[len("log file ") :].strip()
             if candidate:
                 maze_log_path = os.path.abspath(os.path.join(maze_root, candidate))
