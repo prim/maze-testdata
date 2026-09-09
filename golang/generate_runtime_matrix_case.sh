@@ -21,13 +21,20 @@ rm -rf "$artifact_dir"
 mkdir -p "$artifact_dir"
 
 actual_toolchain=$(GOTOOLCHAIN="$toolchain" go version | awk '{print $3}')
+compiler_root=$(GOTOOLCHAIN="$toolchain" go env GOROOT)
 if [[ "$actual_toolchain" != "$toolchain" ]]; then
 	echo "requested $toolchain, got $actual_toolchain" >&2
 	exit 1
 fi
 
-GOTOOLCHAIN="$toolchain" CGO_ENABLED=0 TMPDIR="$repo_root/tmp/go-test" \
-	go build -trimpath -buildvcs=false -o "$binary" "$case_dir/fixture.go"
+# Each fixture is a standalone standard-library program, independent of Maze's
+# minimum Go version. Older toolchains must not parse the root go.mod.
+GOTOOLCHAIN=local GO111MODULE=off CGO_ENABLED=0 TMPDIR="$repo_root/tmp/go-test" \
+	"$compiler_root/bin/go" build -trimpath -buildvcs=false -o "$binary" "$case_dir/fixture.go"
+if [[ "$("$compiler_root/bin/go" version "$binary")" != "$binary: $toolchain" ]]; then
+	echo "compiled fixture does not match $toolchain" >&2
+	exit 1
+fi
 
 TMPDIR="$repo_root/tmp" python3 "$repo_root/cmd/maze-gen-coredump.py" \
 	-o "$artifact_dir" "$binary"
