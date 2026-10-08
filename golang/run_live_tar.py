@@ -69,7 +69,7 @@ class RootResultGuard:
         self.backup_dir.mkdir()
         for name in self.preserve_names:
             source = self.repo_root / name
-            if source.exists():
+            if os.path.lexists(source):
                 os.replace(source, self.backup_dir / name)
         return self
 
@@ -85,11 +85,11 @@ class RootResultGuard:
         uncollected = self.backup_dir.parent / "uncollected-root-results"
         for name in self.preserve_names:
             generated = self.repo_root / name
-            if generated.exists():
+            if os.path.lexists(generated):
                 uncollected.mkdir(exist_ok=True)
                 os.replace(generated, uncollected / name)
             backup = self.backup_dir / name
-            if backup.exists():
+            if os.path.lexists(backup):
                 os.replace(backup, generated)
         try:
             self.backup_dir.rmdir()

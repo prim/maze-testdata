@@ -57,8 +57,8 @@ def main():
             "TMPDIR": str(test_tmp),
         })
         subprocess.run(
-            ["go", "test", "./internal/gocore", "-run", "^TestLegacyRuntimeGCProgramIntegration$", "-count=1", "-v"],
-            cwd=str(repo_root / "golang"),
+            ["go", "test", "./internal/gocore/internal/gocore", "-run", "^TestLegacyRuntimeGCProgramIntegration$", "-count=1", "-v"],
+            cwd=str(repo_root),
             env=env,
             check=True,
         )

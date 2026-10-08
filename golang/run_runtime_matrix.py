@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -28,6 +29,14 @@ def sha256_member(archive, member):
         for block in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(block)
     return digest.hexdigest()
+
+
+def verify_build_info(info, version):
+    settings = {item["Key"]: item["Value"] for item in info.get("Settings", [])}
+    if info.get("GoVersion") != version:
+        raise RuntimeError("executable Go version mismatch: expected %s, got %s" % (version, info.get("GoVersion")))
+    if settings.get("GOOS") != "linux" or settings.get("GOARCH") != "amd64" or settings.get("CGO_ENABLED") != "0":
+        raise RuntimeError("executable platform or cgo build settings mismatch")
 
 
 def verify_case(case_dir, case):
@@ -65,13 +74,21 @@ def verify_case(case_dir, case):
         if len(core_members) != 1 or core_members[0].size != manifest["artifact"]["core_logical_bytes"]:
             raise RuntimeError("%s: logical core size mismatch" % case_dir.name)
         binary_hash = manifest.get("build", {}).get("binary_sha256")
-        binary_found = any(
-            sha256_member(archive, member) == binary_hash
+        binaries = [
+            member
             for member in archive.getmembers()
-            if member.isfile() and not Path(member.name).name.startswith("core.") and member.size <= 32 * 1024 * 1024
-        )
-        if not binary_found:
+            if member.isfile() and not Path(member.name).name.startswith("core.") and member.size <= 32 * 1024 * 1024 and sha256_member(archive, member) == binary_hash
+        ]
+        if len(binaries) != 1:
             raise RuntimeError("%s: matching executable is absent from archive" % case_dir.name)
+        temp_root = Path(__file__).resolve().parents[2] / "tmp"
+        temp_root.mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix="go-matrix-identity-", dir=temp_root) as directory:
+            binary_path = Path(directory) / "fixture"
+            with archive.extractfile(binaries[0]) as source_stream, binary_path.open("wb") as binary_stream:
+                shutil.copyfileobj(source_stream, binary_stream)
+            info = json.loads(subprocess.check_output(["go", "version", "-m", "-json", str(binary_path)], text=True))
+            verify_build_info(info, case["go_version"])
 
     print("verified %-42s %s sha256=%s" % (
         case_dir.name,
@@ -87,19 +104,19 @@ def preserve_root_outputs(repo_root):
     state = {}
     for name in ("maze-result.json", "maze-result.txt", "maze.log"):
         path = repo_root / name
-        state[name] = path.exists()
-        if path.exists():
-            shutil.copy2(str(path), str(backup / name))
+        state[name] = os.path.lexists(path)
+        if state[name]:
+            os.replace(path, backup / name)
     return backup, state
 
 
 def restore_root_outputs(repo_root, backup, state):
     for name, existed in state.items():
         path = repo_root / name
-        if existed:
-            shutil.copy2(str(backup / name), str(path))
-        elif path.exists():
+        if os.path.lexists(path):
             path.unlink()
+        if existed:
+            os.replace(backup / name, path)
     shutil.rmtree(str(backup))
 
 

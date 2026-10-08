@@ -1,23 +1,27 @@
 {
   "artifact": {
-    "bytes": 7046689,
-    "core_logical_bytes": 1256567656,
+    "bytes": 7043519,
+    "core_logical_bytes": 1256305856,
     "members": [
       {
-        "name": "3486338.exe",
+        "name": "3276715.exe",
         "size": 87
       },
       {
-        "name": "3486338.md5",
+        "name": "3276715.md5",
         "size": 127
       },
       {
-        "name": "core.3486338",
-        "size": 1256567656
+        "name": "b302f92ec613614c90435d8aca3b353e",
+        "size": 1830861
       },
       {
-        "name": "e2068aa66b1148c76c4dd2434b4c259e",
-        "size": 1830818
+        "name": "capture-manifest.json",
+        "size": 1234
+      },
+      {
+        "name": "core.3276715",
+        "size": 1256305856
       },
       {
         "name": "libthread_db.so",
@@ -29,10 +33,10 @@
       }
     ],
     "path": "coredump-runtime-core-go1.21.13.tar.gz",
-    "sha256": "1e8e3305d793f7bcc1b619815026b1d39006c0ffd080eb0f1882d19c4e20dea1"
+    "sha256": "a0d54504df53e3d9ccfcf3e94b9ccf88e633ec6c3a63324d91756d4cdd60f020"
   },
   "build": {
-    "binary_sha256": "4138887381d715b4dd4a846c500d977793812593a5e48c2779945b47269777ce",
+    "binary_sha256": "4d9bed883fe1a9fbfb68aceeb9b21c102ad9422697b4d79c71aa6bed9699847d",
     "cgo_enabled": false,
     "command": "GOTOOLCHAIN=go1.21.13 CGO_ENABLED=0 go build -trimpath -buildvcs=false",
     "toolchain": "go version go1.21.13 linux/amd64"
@@ -50,6 +54,6 @@
   "schema": "maze.golang.fixture/v1",
   "source": {
     "path": "fixture.go",
-    "sha256": "5284f40a90042070b4816e96b2fa0fcf92848932c497c4065c6fff097ddc2aa0"
+    "sha256": "7585c9920414f46e332b9a712d96925404c9518cefa8e74bf95682f9943f83d4"
   }
 }
