@@ -6,7 +6,11 @@ C++ Globals & Weak Classification 测试验证脚本
 验证目标：
     1. 验证 Maze 能识别全局变量（g_config 等）
     2. 验证 Record 类型被正确识别
-    3. 验证 known_size 占比合理（全局符号 + vtable 对象贡献）
+    3. 验证 known_size 占比合理（全局符号 + 类型化指针遍历贡献）
+
+注意：Record 虽有 vtable，但经 unordered_map<int, Record*> 的类型化指针即可定型，
+关闭 vtable 识别（EnableCppVtable=false）本用例仍通过，不覆盖 vtable 识别。
+vtable 识别的覆盖见 cpp-vtable-types（基类指针持有）、cpp-long-list-ptr-array 的 Task、cpp/20261009-cpp-virtual-inherit（void* 持有）。
 
 测试数据：
     - 1 个全局 Config 对象
@@ -44,7 +48,7 @@ def validate(data):
     summary = data["summary"]
     all_passed = True
 
-    # Check 1: Record 类型识别（有 vtable，应该被识别）
+    # Check 1: Record 类型识别（类型来自 Record* 指针遍历，不依赖 vtable）
     print("\n[Check 1] Record instances...")
     record = find_type_containing(items, "Record")
     if record:

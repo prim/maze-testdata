@@ -8,7 +8,8 @@ validate.py — forward_list, queue, stack 容器测试验证
 - Message: 4000 个，存在 queue + vector 中
 - Event: 5000 个，存在 stack + vector 中
 
-这些容器没有专门的 TYPE_CODE，对象通过 vtable 和 vector 引用识别。
+对象经 vector<T*> 的类型化指针定型；关闭 vtable 识别本用例仍通过，不覆盖 vtable 识别。
+vtable 识别的覆盖见 cpp-vtable-types（基类指针持有）、cpp-long-list-ptr-array 的 Task、cpp/20261009-cpp-virtual-inherit（void* 持有）。
 """
 from __future__ import print_function
 

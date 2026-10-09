@@ -13,6 +13,9 @@ C++ Basic Malloc 测试验证脚本
     - 80000 个 malloc(32) 块
     - 80000 个 malloc(64) 块
 
+注意：class A 虽含 vtable 指针，但经类型化指针即可定型，关闭 vtable 识别本用例仍通过。
+vtable 识别的覆盖见 cpp-vtable-types（基类指针持有）、cpp-long-list-ptr-array 的 Task、cpp/20261009-cpp-virtual-inherit（void* 持有）。
+
 注意：ptmalloc 会对小块进行对齐，实际 chunk 大小可能大于请求大小
 """
 from __future__ import print_function
