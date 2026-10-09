@@ -13,6 +13,7 @@ C++ 虚继承 vtable address point 测试验证脚本
     VMixed   : Plain, public virtual VBase     2500 个
     Control  : 无虚基类对照组                    4000 个
     std::ostringstream                          1500 个
+    Payload（只被虚基类 VBase::payload 引用）   7500 个
     所有对象只经 std::vector<void*> 持有，类型只能来自 vptr 识别。
 """
 from __future__ import print_function
@@ -28,6 +29,8 @@ EXPECTED = [
     ("Control", 4000),
     # libstdc++ iostream 族通过 basic_ios 虚继承，vptr 同样不在 _ZTV + 16
     ("std::__cxx11::basic_ostringstream<char, std::char_traits<char>, std::allocator<char> >", 1500),
+    # 只经 VBase::payload 引用；虚基类偏移需运行时从 vbase offset 槽读取
+    ("Payload", 7500),
 ]
 
 

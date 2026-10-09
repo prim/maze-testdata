@@ -7,6 +7,8 @@
  *   对象只通过 void* 持有，排除“全局类型化指针遍历”这条识别路径，
  *   结果完全依赖 vtable 识别。std::ostringstream 覆盖 libstdc++ 中
  *   basic_ios 虚继承的常见场景。
+ *   VBase::payload 指向的 Payload 无 vtable，只能经虚基类字段遍历定型：
+ *   虚基类偏移在运行时由 vtable 的 vbase offset 槽决定，不是常量字段。
  *
  * 编译命令（默认 PIE，RTTI 槽在加载时重定位）：
  *   g++ -g -O0 -std=c++11 -o virtual_inherit_test virtual_inherit_test.cpp
@@ -18,12 +20,32 @@
 #include <unistd.h>
 #include <vector>
 
+// 无 vtable 的负载对象，只被虚基类字段引用
+struct Payload
+{
+    long payload_id;
+    long payload_value;
+    double payload_weight;
+    long payload_extra;
+};
+
 class VBase
 {
 public:
     long base_id;
+    Payload *payload;
     virtual ~VBase() {}
 };
+
+static Payload *new_payload(int i)
+{
+    Payload *payload = new Payload();
+    payload->payload_id = i;
+    payload->payload_value = i * 11;
+    payload->payload_weight = i * 0.25;
+    payload->payload_extra = -i;
+    return payload;
+}
 
 // 单虚基类：vtable 前有 1 个 vbase offset
 class VSingle : public virtual VBase
@@ -111,6 +133,7 @@ int main()
     {
         VSingle *obj = new VSingle();
         obj->base_id = i;
+        obj->payload = new_payload(i);
         obj->single_value = i * 2;
         obj->single_weight = i * 0.5;
         g_singles.push_back(obj);
@@ -119,6 +142,7 @@ int main()
     {
         VDiamond *obj = new VDiamond();
         obj->base_id = i;
+        obj->payload = new_payload(i);
         obj->left_value = i;
         obj->right_value = -i;
         obj->diamond_value = i * 3;
@@ -129,6 +153,7 @@ int main()
     {
         VMixed *obj = new VMixed();
         obj->base_id = i;
+        obj->payload = new_payload(i);
         obj->plain_value = i;
         obj->mixed_value = i * 7;
         g_mixed.push_back(obj);
