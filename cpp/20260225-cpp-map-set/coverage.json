@@ -1,0 +1,17 @@
+{
+  "cpp_rejections": {
+    "container-count": 0,
+    "container-header": 0,
+    "container-limit": 0,
+    "container-links": 0,
+    "container-storage": 0,
+    "optional-discriminator": 0,
+    "optional-empty": 0,
+    "pointee-allocator": 0,
+    "pointee-bounds": 1,
+    "variant-index": 0,
+    "virtual-base-bounds": 0
+  },
+  "untyped_malloc_bytes": 648,
+  "untyped_malloc_pieces": 1
+}

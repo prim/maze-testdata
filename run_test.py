@@ -352,7 +352,78 @@ def load_validate_module(test_dir):
     return module
 
 
-def run_test(test_dir, py_merge=False, verbose_maze=False):
+COVERAGE_FILE = "coverage.json"
+# Allowed growth before a recognition regression fails the case.
+COVERAGE_BYTES_TOLERANCE = (0.02, 4096)
+COVERAGE_PIECES_TOLERANCE = (0.02, 2)
+COVERAGE_REJECTIONS_TOLERANCE = (0.10, 3)
+
+
+def coverage_metrics(data):
+    """Recognition metrics from the result summary (lower is better)."""
+    summary = data.get("summary", {})
+    classification = summary.get("allocator_classification", {})
+    metrics = {}
+    if classification.get("inventory_available"):
+        metrics["untyped_malloc_bytes"] = classification.get("untyped_malloc_bytes", 0)
+        metrics["untyped_malloc_pieces"] = classification.get("untyped_malloc_pieces", 0)
+    cpp = summary.get("cpp_recognition")
+    if cpp:
+        metrics["cpp_rejections"] = dict(sorted((cpp.get("rejections") or {}).items()))
+    return metrics
+
+
+def coverage_limit(baseline, tolerance):
+    ratio, slack = tolerance
+    return int(baseline * (1 + ratio)) + slack
+
+
+def check_coverage(abs_test_dir, data, update):
+    """Compare recognition metrics with coverage.json; returns False on regression."""
+    metrics = coverage_metrics(data)
+    path = os.path.join(abs_test_dir, COVERAGE_FILE)
+    print("")
+    print("Recognition coverage: %s" % json.dumps(metrics, sort_keys=True))
+    if update:
+        with open(path, "w") as f:
+            json.dump(metrics, f, indent=2, sort_keys=True)
+            f.write("\n")
+        print("Coverage baseline written: %s" % path)
+        return True
+    if not os.path.exists(path):
+        print("No coverage baseline (%s); not gated" % COVERAGE_FILE)
+        return True
+    with open(path) as f:
+        baseline = json.load(f)
+
+    failures = []
+    improved = []
+
+    def compare(name, current, base, tolerance):
+        if current > coverage_limit(base, tolerance):
+            failures.append("%s %d > baseline %d" % (name, current, base))
+        elif current < base:
+            improved.append("%s %d < baseline %d" % (name, current, base))
+
+    for name, tolerance in (("untyped_malloc_bytes", COVERAGE_BYTES_TOLERANCE),
+                            ("untyped_malloc_pieces", COVERAGE_PIECES_TOLERANCE)):
+        if name in baseline and name in metrics:
+            compare(name, metrics[name], baseline[name], tolerance)
+    for reason, base in sorted(baseline.get("cpp_rejections", {}).items()):
+        current = metrics.get("cpp_rejections", {}).get(reason, 0)
+        compare("cpp rejection %s" % reason, current, base, COVERAGE_REJECTIONS_TOLERANCE)
+
+    for line in improved:
+        print("  improved: %s (consider --update-coverage)" % line)
+    if failures:
+        for line in failures:
+            print("  REGRESSION: %s" % line)
+        return False
+    print("  coverage within baseline")
+    return True
+
+
+def run_test(test_dir, py_merge=False, verbose_maze=False, update_coverage=False):
     """
     运行单个测试
 
@@ -445,6 +516,9 @@ def run_test(test_dir, py_merge=False, verbose_maze=False):
     # 6. 执行验证
     try:
         result = validate_module.validate(data)
+        # 识别覆盖率门槛：py-merge 的统计口径不同，只比对普通模式
+        if result and not py_merge:
+            result = check_coverage(abs_test_dir, data, update_coverage)
         if result:
             print("")
             print("✅ Test PASSED: %s%s" % (test_dir, mode_str))
@@ -474,6 +548,7 @@ def main():
         print("Options:")
         print("  --py-merge    Also run tests with --py-merge mode")
         print("  --verbose-maze  Print full maze output instead of saving it to tmp/")
+        print("  --update-coverage  Write coverage.json from passing runs (recognition baseline)")
         print("")
         print("Examples:")
         print("  python testdata/run_test.py python/20260128-basic")
@@ -484,6 +559,7 @@ def main():
     args = sys.argv[1:]
     enable_py_merge = False
     verbose_maze = False
+    update_coverage = False
     test_dirs = []
 
     for arg in args:
@@ -491,6 +567,8 @@ def main():
             enable_py_merge = True
         elif arg == "--verbose-maze":
             verbose_maze = True
+        elif arg == "--update-coverage":
+            update_coverage = True
         else:
             test_dirs.append(arg)
 
@@ -503,7 +581,7 @@ def main():
     for test_dir in test_dirs:
         # 普通模式测试
         try:
-            passed = run_test(test_dir, verbose_maze=verbose_maze)
+            passed = run_test(test_dir, verbose_maze=verbose_maze, update_coverage=update_coverage)
             results.append((test_dir, passed))
         except Exception as e:
             print("")
