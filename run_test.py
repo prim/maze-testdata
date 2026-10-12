@@ -13,9 +13,12 @@ import tarfile
 import errno
 
 
-if sys.version_info[0] >= 3:
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
+def use_utf8_stdio():
+    """Force UTF-8 output when run as a script; importing the module (for
+    example from tests) must not replace the caller's streams."""
+    if sys.version_info[0] >= 3:
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
 
 def make_log_name(test_dir, py_merge=False):
@@ -405,13 +408,23 @@ def check_coverage(abs_test_dir, data, update):
         elif current < base:
             improved.append("%s %d < baseline %d" % (name, current, base))
 
+    # A metric recorded in the baseline must still be reported: a missing
+    # summary, an unavailable allocator inventory or a dropped rejection reason
+    # is a regression, not an improvement.
     for name, tolerance in (("untyped_malloc_bytes", COVERAGE_BYTES_TOLERANCE),
                             ("untyped_malloc_pieces", COVERAGE_PIECES_TOLERANCE)):
-        if name in baseline and name in metrics:
-            compare(name, metrics[name], baseline[name], tolerance)
+        if name not in baseline:
+            continue
+        if name not in metrics:
+            failures.append("%s missing (baseline %d)" % (name, baseline[name]))
+            continue
+        compare(name, metrics[name], baseline[name], tolerance)
+    current_rejections = metrics.get("cpp_rejections")
     for reason, base in sorted(baseline.get("cpp_rejections", {}).items()):
-        current = metrics.get("cpp_rejections", {}).get(reason, 0)
-        compare("cpp rejection %s" % reason, current, base, COVERAGE_REJECTIONS_TOLERANCE)
+        if current_rejections is None or reason not in current_rejections:
+            failures.append("cpp rejection %s missing (baseline %d)" % (reason, base))
+            continue
+        compare("cpp rejection %s" % reason, current_rejections[reason], base, COVERAGE_REJECTIONS_TOLERANCE)
 
     for line in improved:
         print("  improved: %s (consider --update-coverage)" % line)
@@ -540,6 +553,7 @@ def run_test(test_dir, py_merge=False, verbose_maze=False, update_coverage=False
 
 
 def main():
+    use_utf8_stdio()
     if len(sys.argv) < 2:
         print(
             "Usage: python run_test.py [--py-merge] [--verbose-maze] <test_dir> [test_dir2 ...]"
