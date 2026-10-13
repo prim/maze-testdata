@@ -368,8 +368,11 @@ def coverage_metrics(data):
     classification = summary.get("allocator_classification", {})
     metrics = {}
     if classification.get("inventory_available"):
-        metrics["untyped_malloc_bytes"] = classification.get("untyped_malloc_bytes", 0)
-        metrics["untyped_malloc_pieces"] = classification.get("untyped_malloc_pieces", 0)
+        # Copy only published fields: a missing one must fail the baseline
+        # gate as missing, not pass as an improvement to zero.
+        for name in ("untyped_malloc_bytes", "untyped_malloc_pieces"):
+            if name in classification:
+                metrics[name] = classification[name]
     cpp = summary.get("cpp_recognition")
     if cpp:
         metrics["cpp_rejections"] = dict(sorted((cpp.get("rejections") or {}).items()))
