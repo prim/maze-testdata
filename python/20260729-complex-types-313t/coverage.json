@@ -7,8 +7,8 @@
     "container-storage": 0,
     "optional-discriminator": 0,
     "optional-empty": 0,
-    "pointee-allocator": 619,
-    "pointee-bounds": 1572,
+    "pointee-allocator": 617,
+    "pointee-bounds": 0,
     "variant-index": 0,
     "virtual-base-bounds": 0
   },

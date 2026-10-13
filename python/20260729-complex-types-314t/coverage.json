@@ -8,7 +8,7 @@
     "optional-discriminator": 0,
     "optional-empty": 0,
     "pointee-allocator": 625,
-    "pointee-bounds": 30,
+    "pointee-bounds": 28,
     "variant-index": 0,
     "virtual-base-bounds": 0
   },
