@@ -48,6 +48,15 @@ class GameEntity:
         self.status = {"alive": True, "level": 1}
 
 
+class WeakOnly:
+    """__slots__ with __weakref__ only: Py_TPFLAGS_MANAGED_WEAKREF without
+    MANAGED_DICT, so instances sit behind the two-word preheader."""
+    __slots__ = ("value", "__weakref__")
+
+    def __init__(self, value):
+        self.value = value
+
+
 class TreeNode:
     """树节点 - 带有引用关系"""
     def __init__(self, value, left=None, right=None):
@@ -169,7 +178,11 @@ def create_class_instances(storage: list) -> None:
         storage.append(left)
         storage.append(right)
 
-    print("  Created 2400 class instances")
+    # WeakOnly - 200 个（只有 managed weakref 的 slots 实例）
+    for i in range(200):
+        storage.append(WeakOnly(i))
+
+    print("  Created 2600 class instances")
 
 
 def create_dataclasses(storage: list) -> None:

@@ -11,13 +11,16 @@ This is the free-threaded form used in practice (python.org, pyenv and uv
 - CPython's embedded mimalloc allocator
 - GC objects without a `PyGC_Head` prefix (the type is still declared)
 - managed-dict instances behind the two-word preheader
+- `__slots__` instances with only `__weakref__` (`Py_TPFLAGS_MANAGED_WEAKREF`
+  without `MANAGED_DICT`), which also use the preheader
 - heap types that are not linked into GC generation lists
 - dicts whose `PyDictObject` fills its mimalloc block exactly
 - classes, dataclasses, named tuples, lists, tuples, dictionaries, sets,
   strings, bytes, numeric objects, and `collections` types
 
-The workload is the same as `20260729-complex-types-313` (GIL build), so the
-validator uses the same exact counts for custom types. It also requires the
+The workload is the same as `20260729-complex-types-313` (GIL build) plus 200
+`WeakOnly` instances, so the validator uses the same exact counts for custom
+types and requires exactly 200 `WeakOnly`. It also requires the
 allocator to be `mimalloc`, `unknown` memory to be zero, and minimum counts
 for built-in objects (`int`, `code`, `type`, descriptors, dicts), which an
 object-layout regression drops as a whole.
@@ -52,9 +55,9 @@ Python:              3.13.0 experimental free-threading build
 Py_GIL_DISABLED: 1   Py_DEBUG: 0   abiflags: t
 executable Build ID: eb31940721124281c6b7b343d409523aa077fbe6
 libpython Build ID:  d9d8d55060705919d822269b8fe8b29bfd05982c
-core size:           1,076,548,624 bytes
-core MD5:            069bbe430bd2538dda0a5968102727be
-core SHA-256:        e07d65bca5b192ac5c8ebb14b7c778a0064dd6918af8c215b357b53fe9d105c4
+core size:           1,076,548,504 bytes
+core MD5:            6838722233c3ca667e43c2d4cbfe9d8a
+core SHA-256:        f3c3849b9684a06b8cdd75057ca513bfce597a408681e8758d5b2307e18eb90d
 ```
 
 ## Run

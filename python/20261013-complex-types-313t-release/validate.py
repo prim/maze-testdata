@@ -120,6 +120,14 @@ def validate(data):
     assert simple_class["amount"] == 500, "Expected 500 SimpleClass, got %d" % simple_class["amount"]
     print("  ✓ SimpleClass amount = 500")
 
+    # WeakOnly - 200 个：__slots__ 只含 __weakref__，类型只有
+    # Py_TPFLAGS_MANAGED_WEAKREF，实例同样位于两字预置头之后
+    weak_only = find_type_containing("WeakOnly")
+    assert weak_only is not None, "WeakOnly not found"
+    print("  WeakOnly: amount=%d" % weak_only["amount"])
+    assert weak_only["amount"] == 200, "Expected 200 WeakOnly, got %d" % weak_only["amount"]
+    print("  ✓ WeakOnly amount = 200")
+
     # ============================================================
     # 验证 dataclass 类型 (Python 3.7+)
     # ============================================================

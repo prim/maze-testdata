@@ -7,11 +7,11 @@
     "container-storage": 0,
     "optional-discriminator": 0,
     "optional-empty": 0,
-    "pointee-allocator": 648,
+    "pointee-allocator": 646,
     "pointee-bounds": 3,
     "variant-index": 0,
     "virtual-base-bounds": 0
   },
-  "untyped_malloc_bytes": 181360,
-  "untyped_malloc_pieces": 1492
+  "untyped_malloc_bytes": 178032,
+  "untyped_malloc_pieces": 1444
 }
