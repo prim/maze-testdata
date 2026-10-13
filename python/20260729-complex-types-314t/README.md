@@ -18,9 +18,12 @@ SHA-256 2299dae542d395ce3883aca00d3c910307cd68e0b2f7336098c8e7b7eee9f3e9
   strings, bytes, numeric objects, and `collections` types
 
 The workload creates 17,800 top-level objects and keeps them alive until the
-coredump is captured. The validator checks exact counts for the stable custom
-types, requires the allocator to be `mimalloc`, and requires `unknown` memory
-to be zero.
+coredump is captured. The validator requires the allocator to be `mimalloc`,
+no `unknown` memory or pymalloc pools, and identified PyMem domain
+allocations. It does not check object counts: this debug build puts a
+16-byte debug allocator header in front of every object, and Maze does not
+support debug builds. Free-threaded object recognition is validated with
+exact counts by `20261013-complex-types-313t-release`.
 
 ## Recreate The Coredump
 
@@ -61,8 +64,8 @@ core SHA-256:          a8759a9291d93b7fd24e9e0f9bdc90377028a8eccd6d2ba5c85b9611b
 ```
 
 The stable Maze contract is `allocator=mimalloc`, no unknown memory or
-pymalloc pools, 60,314 mimalloc objects, and identified CPython PyMem debug
-domain allocations.
+pymalloc pools, more than 50,000 mimalloc objects, and identified CPython
+PyMem debug domain allocations.
 
 ## Run
 

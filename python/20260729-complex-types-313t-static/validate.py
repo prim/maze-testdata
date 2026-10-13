@@ -106,33 +106,33 @@ def validate(data):
     # ============================================================
     print("\nValidating class instances:")
 
-    # CPython 3.13 的分类结果还包含每个用户类型自身的 1 个类型对象。
+    # 与 GIL 版相同：分类结果精确对应创建的实例数。
     person = find_type_containing("PersonClass")
     assert person is not None, "PersonClass not found"
     print("  PersonClass: amount=%d" % person["amount"])
-    assert person["amount"] == 1001, "Expected 1001 PersonClass, got %d" % person["amount"]
-    print("  ✓ PersonClass amount = 1001")
+    assert person["amount"] == 1000, "Expected 1000 PersonClass, got %d" % person["amount"]
+    print("  ✓ PersonClass amount = 1000")
 
     # GameEntity - 应该有 300 个
     game_entity = find_type_containing("GameEntity")
     assert game_entity is not None, "GameEntity not found"
     print("  GameEntity: amount=%d" % game_entity["amount"])
-    assert game_entity["amount"] == 301, "Expected 301 GameEntity, got %d" % game_entity["amount"]
-    print("  ✓ GameEntity amount = 301")
+    assert game_entity["amount"] == 300, "Expected 300 GameEntity, got %d" % game_entity["amount"]
+    print("  ✓ GameEntity amount = 300")
 
     # TreeNode - 应该有 600 个
     tree_node = find_type_containing("TreeNode")
     assert tree_node is not None, "TreeNode not found"
     print("  TreeNode: amount=%d" % tree_node["amount"])
-    assert tree_node["amount"] == 601, "Expected 601 TreeNode, got %d" % tree_node["amount"]
-    print("  ✓ TreeNode amount = 601")
+    assert tree_node["amount"] == 600, "Expected 600 TreeNode, got %d" % tree_node["amount"]
+    print("  ✓ TreeNode amount = 600")
 
     # SimpleClass - 应该有 500 个
     simple_class = find_type_containing("SimpleClass")
     assert simple_class is not None, "SimpleClass not found"
     print("  SimpleClass: amount=%d" % simple_class["amount"])
-    assert simple_class["amount"] == 501, "Expected 501 SimpleClass, got %d" % simple_class["amount"]
-    print("  ✓ SimpleClass amount = 501")
+    assert simple_class["amount"] == 500, "Expected 500 SimpleClass, got %d" % simple_class["amount"]
+    print("  ✓ SimpleClass amount = 500")
 
     # ============================================================
     # 验证 dataclass 类型 (Python 3.7+)
@@ -143,15 +143,15 @@ def validate(data):
     player = find_type_containing("Player")
     assert player is not None, "Player dataclass not found"
     print("  Player: amount=%d" % player["amount"])
-    assert player["amount"] == 501, "Expected 501 Player, got %d" % player["amount"]
-    print("  ✓ Player dataclass amount = 501")
+    assert player["amount"] == 500, "Expected 500 Player, got %d" % player["amount"]
+    print("  ✓ Player dataclass amount = 500")
 
     # Config frozen dataclass - 应该有 300 个
     config = find_type_containing("Config")
     assert config is not None, "Config dataclass not found"
     print("  Config: amount=%d" % config["amount"])
-    assert config["amount"] == 301, "Expected 301 Config, got %d" % config["amount"]
-    print("  ✓ Config dataclass amount = 301")
+    assert config["amount"] == 300, "Expected 300 Config, got %d" % config["amount"]
+    print("  ✓ Config dataclass amount = 300")
 
     # ============================================================
     # 验证字典类型
@@ -170,27 +170,30 @@ def validate(data):
     # ============================================================
     print("\nValidating NamedTuple types:")
 
-    # NamedTuple 实例按底层 tuple 归类；这里验证类型标记存在。
+    # 普通 GIL 构建可保留 NamedTuple 子类的精确分类。
     point = find_type_containing("Point")
     assert point is not None, "Point not found"
     print("  Point: amount=%d" % point["amount"])
-    print("  ✓ Point type marker identified")
+    assert point["amount"] == 400, "Expected 400 Point, got %d" % point["amount"]
+    print("  ✓ Point amount = 400")
 
     rectangle = find_type_containing("Rectangle")
     assert rectangle is not None, "Rectangle not found"
     print("  Rectangle: amount=%d" % rectangle["amount"])
-    print("  ✓ Rectangle type marker identified")
+    assert rectangle["amount"] == 300, "Expected 300 Rectangle, got %d" % rectangle["amount"]
+    print("  ✓ Rectangle amount = 300")
 
     # ============================================================
     # 验证 collections.deque 类型
     # ============================================================
     print("\nValidating collections types:")
 
-    # deque 实例的内部块按 allocator 大小分类；这里验证类型标记存在。
+    # 300 个 deque 实例加 1 个类型对象。
     deque_type = find_type_containing("deque")
     assert deque_type is not None, "deque not found"
     print("  deque: amount=%d" % deque_type["amount"])
-    print("  ✓ deque type marker identified")
+    assert deque_type["amount"] == 301, "Expected 301 deque objects, got %d" % deque_type["amount"]
+    print("  ✓ deque amount = 301")
 
     # ============================================================
     # 验证集合类型
